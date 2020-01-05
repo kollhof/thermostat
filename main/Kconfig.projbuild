@@ -1,0 +1,26 @@
+menu "App Configuration"
+
+    config APP_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) for the example to connect to.
+
+    config APP_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config APP_MQTT_URI
+        string "MQTT URI"
+        default "mqtts://example.org:1883"
+        help
+            The MQTT broker URI to connect to.
+
+    config APP_OTA_URI
+        string "OTA URI"
+        default "https://example.org:3232"
+        help
+            The OTA firmware update URL.
+endmenu
