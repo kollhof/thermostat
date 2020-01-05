@@ -50,3 +50,14 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+#jkk
+
+build
+secret
+.vscode
+sdkconfig
+.DS_Store
+ota
+components/esp32-ds18b20
+components/esp32-owb
