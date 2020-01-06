@@ -23,4 +23,5 @@ menu "App Configuration"
         default "https://example.org:3232"
         help
             The OTA firmware update URL.
+
 endmenu

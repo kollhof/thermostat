@@ -5,7 +5,7 @@ extern "C" {
 #endif
 
 
-void app_start_mqtt(esp_mqtt_client_config_t * config);
+void app_start_mqtt(esp_mqtt_client_config_t * config, const char* topic_prefix);
 
 
 #ifdef __cplusplus
