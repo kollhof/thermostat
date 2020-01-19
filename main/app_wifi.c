@@ -8,7 +8,8 @@ static const char* TAG = "app-wifi";
 
 
 static int s_retry_num = 0;
-static const int MAXIMUM_NET_RETRY = 5;
+// TODO: retry forvever
+static const int MAXIMUM_NET_RETRY = -1;
 
 
 static void handle_network_disconnect() {
@@ -19,7 +20,7 @@ static void handle_network_disconnect() {
   }
   ESP_LOGI(TAG,"connecting to the AP failed");
 
-  // TODO: restart?
+  // TODO: restart or keep trying?
 }
 
 

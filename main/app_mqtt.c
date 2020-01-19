@@ -1,6 +1,7 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
+#include "esp_ota_ops.h"
 #include "mqtt_client.h"
 
 #include "cJSON.h"
@@ -106,8 +107,10 @@ static void handle_message(void *arg, esp_event_base_t event_base, int32_t event
 static void handle_stats(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
   ctx_t * ctx = (ctx_t *) arg;
   app_stats_t * stats = (app_stats_t*) data;
+  const esp_app_desc_t * desc = esp_ota_get_app_description();
 
   cJSON *json = cJSON_CreateObject();
+  cJSON_AddStringToObject(json, "app_version", desc->version);
   cJSON_AddNumberToObject(json, "current_temp", stats->current_temp);
   cJSON_AddNumberToObject(json, "target_temp", stats->target_temp);
   cJSON_AddNumberToObject(json, "heat", stats->heat / 100.0);
@@ -125,10 +128,10 @@ static void handle_ota(void* arg, esp_event_base_t evt_base, int32_t evt_id, voi
 
   // TODO: QOS = 1 crash when not connected
   if (evt_id == APP_EVENT_OTA_STARTED) {
-    publish(ctx, "/system/ota/started", "", 0, 0, 0);
+    publish(ctx, "/system/ota/started", "{}", 0, 0, 0);
 
   } else if (evt_id == APP_EVENT_OTA_SUCCESS) {
-    publish(ctx, "/system/ota/success", "", 0, 0, 0);
+    publish(ctx, "/system/ota/success", "{}", 0, 0, 0);
 
   } else if (evt_id == APP_EVENT_OTA_FAILED) {
     esp_err_t ret = * ((esp_err_t *) data);
@@ -146,13 +149,13 @@ static void handle_ota(void* arg, esp_event_base_t evt_base, int32_t evt_id, voi
 
 static void handle_restart(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
   ctx_t * ctx = (ctx_t *) arg;
-  publish(ctx, "/system/restart/started", "", 0, 0, 0);
+  publish(ctx, "/system/restart/started", "{}", 0, 0, 0);
 }
 
 
 static void handle_time_updated(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
   ctx_t * ctx = (ctx_t *) arg;
-  publish(ctx, "/system/time/updated", "", 0, 0, 0);
+  publish(ctx, "/system/time/updated", "{}", 0, 0, 0);
 }
 
 
