@@ -25,7 +25,7 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
   app_thermostat_state_t * current_state = (app_thermostat_state_t*) data;
 
   stats->current_temp = current_state->current_temp;
-  stats->heat_power = current_state->heat_power;
+  stats->heat = current_state->heat;
 
   if (stats->target_temp != current_state->target_temp) {
     stats->target_temp = current_state->target_temp;
@@ -45,8 +45,7 @@ void app_start_stats_handler() {
 
   esp_timer_create_args_t timer_args = {
     .name = "app-stats",
-    .callback = &report_stats
-  ,
+    .callback = &report_stats,
     .arg = stats
   };
   esp_timer_handle_t timer;

@@ -34,11 +34,11 @@ static void simple_thermostat_loop(temp_sensor_t * temp_sensor, slow_pwm_t * pwm
     state->current_temp = get_temperature(temp_sensor);
 
     if (state->current_temp < state->target_temp) {
-      state->heat_power = 100;
+      state->heat = 100;
     } else {
-      state->heat_power = 0;
+      state->heat = 0;
     }
-    set_pwm_duty(pwm, state->heat_power);
+    set_pwm_duty(pwm, state->heat);
 
     post_changed_event(state);
 
@@ -60,7 +60,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp) {
   app_thermostat_state_t state = {
     .current_temp = 20,
     .target_temp = 20,
-    .heat_power = 0
+    .heat = 0
   };
   const uint64_t temp_read_interval = 1000*1000;
   const uint64_t pwm_freq = 10 * 1000*1000;

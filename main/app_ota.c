@@ -30,6 +30,8 @@ static void ota_task(void * arg) {
   }
 
   app_post_event(APP_EVENT_RESTART, NULL, 0);
+  ESP_LOGI(TAG, "OTA waiting for restart...");
+  sleep(5);
 }
 
 

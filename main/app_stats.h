@@ -8,7 +8,7 @@ extern "C" {
 typedef struct {
   float current_temp;
   float target_temp;
-  uint8_t heat_power;
+  uint8_t heat;
 } app_stats_t;
 
 

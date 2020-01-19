@@ -93,7 +93,6 @@ static void handle_message(void *arg, esp_event_base_t event_base, int32_t event
 
   } else if (topic_matches(event, ctx, "/target-temp/set")) {
     float target_temp = cJSON_GetObjectItem(root, "value")->valuedouble;
-
     app_post_event(APP_EVENT_TARGET_TEMP_SET, &target_temp, sizeof(target_temp));
 
   } else {
@@ -111,14 +110,49 @@ static void handle_stats(void* arg, esp_event_base_t evt_base, int32_t evt_id, v
   cJSON *json = cJSON_CreateObject();
   cJSON_AddNumberToObject(json, "current_temp", stats->current_temp);
   cJSON_AddNumberToObject(json, "target_temp", stats->target_temp);
-  cJSON_AddNumberToObject(json, "heat_power", stats->heat_power);
+  cJSON_AddNumberToObject(json, "heat", stats->heat / 100.0);
   char * msg = cJSON_Print(json);
   cJSON_Delete(json);
 
-  // ESP_LOGI(TAG, "posting stats: %s", msg);
   // TODO: QOS = 1 crash when not connected
   publish(ctx, "/stats/report", msg, 0, 0, 0);
   free(msg);
+}
+
+
+static void handle_ota(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
+  ctx_t * ctx = (ctx_t *) arg;
+
+  // TODO: QOS = 1 crash when not connected
+  if (evt_id == APP_EVENT_OTA_STARTED) {
+    publish(ctx, "/system/ota/started", "", 0, 0, 0);
+
+  } else if (evt_id == APP_EVENT_OTA_SUCCESS) {
+    publish(ctx, "/system/ota/success", "", 0, 0, 0);
+
+  } else if (evt_id == APP_EVENT_OTA_FAILED) {
+    esp_err_t ret = * ((esp_err_t *) data);
+
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddNumberToObject(json, "err", ret);
+    char * msg = cJSON_Print(json);
+    cJSON_Delete(json);
+
+    publish(ctx, "/system/ota/failed", msg, 0, 0, 0);
+    free(msg);
+  }
+}
+
+
+static void handle_restart(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
+  ctx_t * ctx = (ctx_t *) arg;
+  publish(ctx, "/system/restart/started", "", 0, 0, 0);
+}
+
+
+static void handle_time_updated(void* arg, esp_event_base_t evt_base, int32_t evt_id, void* data) {
+  ctx_t * ctx = (ctx_t *) arg;
+  publish(ctx, "/system/time/updated", "", 0, 0, 0);
 }
 
 
@@ -135,5 +169,13 @@ void app_start_mqtt(esp_mqtt_client_config_t * config, const char* topic_prefix)
   esp_mqtt_client_register_event(ctx->client, MQTT_EVENT_DATA, handle_message, ctx);
 
   app_register_evt_handler(APP_EVENT_STATS_REPORT, handle_stats, ctx);
+
+  app_register_evt_handler(APP_EVENT_OTA_STARTED, handle_ota, ctx);
+  app_register_evt_handler(APP_EVENT_OTA_SUCCESS, handle_ota, ctx);
+  app_register_evt_handler(APP_EVENT_OTA_FAILED, handle_ota, ctx);
+
+  app_register_evt_handler(APP_EVENT_RESTART, handle_restart, ctx);
+
+  app_register_evt_handler(APP_EVENT_TIME_UPDATED, handle_time_updated, ctx);
 }
 
