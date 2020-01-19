@@ -57,6 +57,7 @@ build
 secret
 .vscode
 sdkconfig
+sdkconfig.old
 .DS_Store
 ota
 components/esp32-ds18b20

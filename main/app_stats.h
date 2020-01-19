@@ -1,8 +1,5 @@
 #pragma once
 
-#include "driver/gpio.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -12,10 +9,10 @@ typedef struct {
   float current_temp;
   float target_temp;
   uint8_t heat;
-} app_thermostat_state_t;
+} app_stats_t;
 
 
-void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp);
+void app_start_stats_handler();
 
 
 #ifdef __cplusplus

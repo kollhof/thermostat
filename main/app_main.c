@@ -15,6 +15,7 @@
 #include "./app_ota.h"
 #include "./app_events.h"
 #include "./app_restarter.h"
+#include "./app_stats.h"
 
 
 static const char* TAG = "app";
@@ -70,6 +71,8 @@ void app_main(void) {
   ESP_LOGI(TAG, "starting...");
   init_system();
 
+  const char * device_id = CONFIG_APP_DEVICE_ID;
+
   wifi_config_t wifi_config = {
     .sta = {
       .ssid = CONFIG_APP_WIFI_SSID,
@@ -81,7 +84,7 @@ void app_main(void) {
     .uri = CONFIG_APP_MQTT_URI,
     .cert_pem = (const char *) aws_root_ca_pem,
     .client_cert_pem = (const char *) aws_certificate_pem_crt,
-    .client_key_pem = (const char *) aws_private_pem_key
+    .client_key_pem = (const char *) aws_private_pem_key,
   };
 
   esp_http_client_config_t ota_config = {
@@ -89,16 +92,18 @@ void app_main(void) {
     .cert_pem = (char *)ota_ca_cert_pem,
   };
 
+  // TODO: pull from board config
+  const gpio_num_t gpio_pwm = CONFIG_APP_PWM_GPIO;
+  const gpio_num_t gpio_temp = CONFIG_APP_TEMP_GPIO;
+
   app_start_network(&wifi_config);
-  app_start_mqtt(&mqtt_config);
+  app_start_mqtt(&mqtt_config, device_id);
 
   app_start_restart_handler();
   app_start_ota_handler(&ota_config);
   app_start_timekeeper();
+  app_start_stats_handler();
 
-  // TODO: pull from board config
-  const gpio_num_t gpio_pwm = 25;
-  const gpio_num_t gpio_temp = 19;
   app_start_thermostat(gpio_pwm, gpio_temp);
 
   // TODO: should never reach this point

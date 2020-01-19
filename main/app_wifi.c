@@ -8,18 +8,19 @@ static const char* TAG = "app-wifi";
 
 
 static int s_retry_num = 0;
-static const int MAXIMUM_NET_RETRY = 5;
+// TODO: retry forvever
+static const int MAXIMUM_NET_RETRY = -1;
 
 
 static void handle_network_disconnect() {
-  if (s_retry_num < MAXIMUM_NET_RETRY) {
+  if (s_retry_num < MAXIMUM_NET_RETRY || MAXIMUM_NET_RETRY == -1) {
     esp_wifi_connect();
     s_retry_num++;
-    ESP_LOGI(TAG, "retry to connect to the AP");
+    ESP_LOGW(TAG, "retry to connect to the AP");
   }
-  ESP_LOGI(TAG,"connecting to the AP failed");
+  ESP_LOGE(TAG,"connecting to the AP failed");
 
-  // TODO: restart?
+  // TODO: restart or keep trying?
 }
 
 
@@ -43,6 +44,9 @@ static void handle_wifi_event(
 
   } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
     handle_network_disconnect();
+
+  } else {
+    ESP_LOGW(TAG, "network event: %d", event_id );
   }
 }
 
