@@ -1,5 +1,6 @@
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "driver/gpio.h"
 
 #include "./app_events.h"
 #include "./app_thermostat.h"
@@ -34,9 +35,18 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
 }
 
 
-void app_start_stats_handler() {
+static void init_led(gpio_num_t gpio_led) {
+  gpio_pad_select_gpio(gpio_led);
+  gpio_set_direction(gpio_led, GPIO_MODE_OUTPUT);
+  gpio_set_level(gpio_led, 1);
+}
+
+
+void app_start_stats_handler(gpio_num_t gpio_led) {
   ESP_LOGI(TAG, "starting stats handler");
   const int stats_interval_sec = 10;
+
+  init_led(gpio_led);
 
   app_stats_t * stats = malloc(sizeof(app_stats_t));
 

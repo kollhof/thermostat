@@ -7,6 +7,8 @@
 #include "esp_https_ota.h"
 #include "nvs_flash.h"
 #include "mqtt_client.h"
+#include "unistd.h"
+#include "driver/gpio.h"
 
 #include "./app_wifi.h"
 #include "./app_mqtt.h"
@@ -95,6 +97,7 @@ void app_main(void) {
   // TODO: pull from board config
   const gpio_num_t gpio_pwm = CONFIG_APP_PWM_GPIO;
   const gpio_num_t gpio_temp = CONFIG_APP_TEMP_GPIO;
+  const gpio_num_t gpio_led = CONFIG_APP_LED_GPIO;
 
   app_start_network(&wifi_config);
   app_start_mqtt(&mqtt_config, device_id);
@@ -102,10 +105,12 @@ void app_main(void) {
   app_start_restart_handler();
   app_start_ota_handler(&ota_config);
   app_start_timekeeper();
-  app_start_stats_handler();
+  app_start_stats_handler(gpio_led);
 
   app_start_thermostat(gpio_pwm, gpio_temp);
-
+  while (1) {
+    sleep(1000);
+  }
   // TODO: should never reach this point
   ESP_LOGI(TAG, "main task returned unexpectedly, restarting ...");
   fflush(stdout);

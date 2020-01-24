@@ -1,3 +1,6 @@
+All code except ./hardware/
+===========================
+
 MIT License
 
 Copyright (c) 2020 Jan Klaas Kollhof
@@ -19,3 +22,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+Hardware schema and board (everything under ./hardware/)
+========================================================
+Attribution-ShareAlike 4.0 (CC BY-SA 4.0)
+
+https://creativecommons.org/licenses/by-sa/4.0/
