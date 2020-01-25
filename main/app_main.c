@@ -108,9 +108,7 @@ void app_main(void) {
   app_start_stats_handler(gpio_led);
 
   app_start_thermostat(gpio_pwm, gpio_temp);
-  while (1) {
-    sleep(1000);
-  }
+
   // TODO: should never reach this point
   ESP_LOGI(TAG, "main task returned unexpectedly, restarting ...");
   fflush(stdout);
