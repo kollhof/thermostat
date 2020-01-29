@@ -29,6 +29,12 @@ elseif(DEV_BOARD STREQUAL "recom-4")
   add_definitions(-DCONFIG_APP_LED_GPIO=13)
   add_definitions(-DCONFIG_APP_DEVICE_ID="recom-4")
 
+elseif(DEV_BOARD STREQUAL "recom-5")
+  add_definitions(-DCONFIG_APP_PWM_GPIO=16)
+  add_definitions(-DCONFIG_APP_TEMP_GPIO=4)
+  add_definitions(-DCONFIG_APP_LED_GPIO=2)
+  add_definitions(-DCONFIG_APP_DEVICE_ID="recom-5")
+
 elseif(DEV_BOARD STREQUAL "pico32")
   add_definitions(-DCONFIG_APP_PWM_GPIO=25)
   add_definitions(-DCONFIG_APP_TEMP_GPIO=19)
@@ -41,6 +47,8 @@ elseif(DEV_BOARD STREQUAL "hilink")
   add_definitions(-DCONFIG_APP_LED_GPIO=4)
   add_definitions(-DCONFIG_APP_LED2_GPIO=2)
   add_definitions(-DCONFIG_APP_DEVICE_ID="hilink")
+
+
 
 endif()
 
