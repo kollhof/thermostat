@@ -125,12 +125,13 @@ static void sensors_init(Sensors * sensors, uint8_t gpio) {
 
 
 static float read_temperature(DS18B20_Info * device) {
-  float reading = 0;
+  float reading = -222;
 
   ds18b20_convert_all(device->bus);
   ds18b20_wait_for_conversion(device);
   // TODO: DS18B20_ERROR err = ds18b20_read_temp(device, &reading);
   ds18b20_read_temp(device, &reading);
+
   return reading;
 }
 
@@ -156,10 +157,12 @@ static void temp_task(void * arg) {
   double avg_temp = 18.0;
   double alpha = 0.2;
 
+
   while(true) {
     const int64_t start_time = esp_timer_get_time();
 
     const float temp = read_temperature(sensors.devices[0]);
+
     avg_temp = exp_weighted_moving_avg(avg_temp, temp, alpha);
 
     atomic_store_float(&(temp_sensor->curr_temp), avg_temp);

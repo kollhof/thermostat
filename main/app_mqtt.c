@@ -50,6 +50,7 @@ static void publish(ctx_t * ctx, const char *topic, const char *data, int len, i
   char * full_topic = malloc(50);
   snprintf(full_topic, 50, "%s%s", ctx->topic_prefix, topic);
 
+  ESP_LOGI(TAG, "publish %s %s", full_topic, data);
   esp_mqtt_client_publish(ctx->client, full_topic, data, len, qos, retain);
   free(full_topic);
 }
@@ -164,8 +165,11 @@ void app_start_mqtt(esp_mqtt_client_config_t * config, const char* topic_prefix)
 
   ctx_t * ctx = malloc(sizeof(ctx_t));
 
+  // config->keepalive = 60;
+
   ctx->client = esp_mqtt_client_init(config);
   ctx->topic_prefix = topic_prefix;
+
 
   esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, handle_ip_event, ctx->client);
   esp_mqtt_client_register_event(ctx->client, MQTT_EVENT_CONNECTED, handle_connected, ctx);

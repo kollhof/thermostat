@@ -98,6 +98,8 @@ void app_main(void) {
   const gpio_num_t gpio_pwm = CONFIG_APP_PWM_GPIO;
   const gpio_num_t gpio_temp = CONFIG_APP_TEMP_GPIO;
   const gpio_num_t gpio_led = CONFIG_APP_LED_GPIO;
+  const uint8_t heat_min = CONFIG_APP_HEAT_MIN;
+  const uint8_t heat_max = CONFIG_APP_HEAT_MAX;
 
   app_start_network(&wifi_config);
   app_start_mqtt(&mqtt_config, device_id);
@@ -107,7 +109,7 @@ void app_main(void) {
   app_start_timekeeper();
   app_start_stats_handler(gpio_led);
 
-  app_start_thermostat(gpio_pwm, gpio_temp);
+  app_start_thermostat(gpio_pwm, gpio_temp, heat_min, heat_max);
 
   // TODO: should never reach this point
   ESP_LOGI(TAG, "main task returned unexpectedly, restarting ...");

@@ -14,12 +14,12 @@ static const int MAXIMUM_NET_RETRY = -1;
 
 static void handle_network_disconnect() {
   if (s_retry_num < MAXIMUM_NET_RETRY || MAXIMUM_NET_RETRY == -1) {
-    esp_wifi_connect();
     s_retry_num++;
     ESP_LOGW(TAG, "retry to connect to the AP");
+    esp_wifi_connect();
+    return;
   }
   ESP_LOGE(TAG,"connecting to the AP failed");
-
   // TODO: restart or keep trying?
 }
 
@@ -30,7 +30,7 @@ static void handle_ip_event(
 
   if (event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-    ESP_LOGI(TAG, "network connected:" IPSTR, IP2STR(&event->ip_info.ip));
+    ESP_LOGI(TAG, "network connected: "IPSTR, IP2STR(&event->ip_info.ip));
     s_retry_num = 0;
   }
 }

@@ -14,13 +14,14 @@ static const char* TAG = "slow_pwm";
 static void periodic_timer_callback(void * arg) {
   slow_pwm_t * pmw = (slow_pwm_t *)arg;
 
+
   uint32_t duty = atomic_load(&(pmw->duty));
 
   if (pmw->tick_cntr < duty) {
-    // ESP_LOGI(TAG, "%u on", sp->tick_cntr);
+    // ESP_LOGI(TAG, "tick %u, duty %u: on", pmw->tick_cntr, duty);
     gpio_set_level(pmw->gpio_num, 1);
   } else if (duty < pmw->cycle_ticks) {
-    // ESP_LOGI(TAG, "%u off", sp->tick_cntr);
+    // ESP_LOGI(TAG, "tick %u, duty %u: off", pmw->tick_cntr, duty);
     gpio_set_level(pmw->gpio_num, 0);
   }
 
@@ -37,6 +38,7 @@ slow_pwm_t * start_pwm(
   ESP_LOGI(TAG, "starting slow-pwm ...");
 
   gpio_set_direction(gpio_num, GPIO_MODE_OUTPUT);
+  gpio_set_level(gpio_num, 0);
 
   slow_pwm_t * pwm = malloc(sizeof(slow_pwm_t));
   *pwm = (slow_pwm_t) {
@@ -69,7 +71,7 @@ void stop_pwm(slow_pwm_t * pwm) {
 
 
 void set_pwm_duty(slow_pwm_t * pwm, uint32_t duty) {
-  // ESP_LOGI(TAG, "update duty cycle: %u", duty);
+  ESP_LOGI(TAG, "update duty cycle: %u", duty);
   atomic_store(&(pwm->duty), duty);
 };
 
