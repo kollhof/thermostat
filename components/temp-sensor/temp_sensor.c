@@ -6,6 +6,7 @@
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_task.h"
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
@@ -36,20 +37,6 @@ typedef struct {
 
 static double exp_weighted_moving_avg(double prev_value, double value, double alpha) {
   return ((1.0-alpha) * prev_value) + (alpha * value);
-}
-
-
-static int64_t sleep_interval (int64_t start_time, int64_t interval) {
-  const int64_t read_time = esp_timer_get_time() - start_time;
-
-  int64_t sleep_time = interval - read_time;
-
-  if (sleep_time < 0) {
-    sleep_time = 0;
-  }
-
-  usleep(sleep_time);
-  return sleep_time;
 }
 
 
@@ -110,12 +97,12 @@ static void sensors_init(Sensors * sensors, uint8_t gpio) {
     DS18B20_Info * ds18b20_info = ds18b20_malloc();
     sensors->devices[i] = ds18b20_info;
 
-    // if (num_devices == 1) {
-    //   ESP_LOGI(TAG, "Single device optimisations enabled");
-    //   ds18b20_init_solo(ds18b20_info, owb);
-    // } else {
-    ds18b20_init(ds18b20_info, sensors->bus, device_rom_codes[i]);
-    // }
+    if (num_devices == 1) {
+      ESP_LOGI(TAG, "Single device optimisations enabled");
+      ds18b20_init_solo(ds18b20_info, sensors->bus);
+    } else {
+      ds18b20_init(ds18b20_info, sensors->bus, device_rom_codes[i]);
+    }
     ds18b20_use_crc(ds18b20_info, true);
     ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION);
   }
@@ -125,14 +112,18 @@ static void sensors_init(Sensors * sensors, uint8_t gpio) {
 
 
 static float read_temperature(DS18B20_Info * device) {
-  float reading = -222;
+  float reading = 0;
 
   ds18b20_convert_all(device->bus);
   ds18b20_wait_for_conversion(device);
-  // TODO: DS18B20_ERROR err = ds18b20_read_temp(device, &reading);
-  ds18b20_read_temp(device, &reading);
+  DS18B20_ERROR err = ds18b20_read_temp(device, &reading);
 
-  return reading;
+  if (err == DS18B20_OK) {
+    return reading;
+  }
+
+  ESP_LOGE(TAG, "error reading temp %u", err);
+  return 100;
 }
 
 
@@ -159,7 +150,7 @@ static void temp_task(void * arg) {
 
 
   while(true) {
-    const int64_t start_time = esp_timer_get_time();
+    TickType_t start_time = xTaskGetTickCount();
 
     const float temp = read_temperature(sensors.devices[0]);
 
@@ -167,7 +158,12 @@ static void temp_task(void * arg) {
 
     atomic_store_float(&(temp_sensor->curr_temp), avg_temp);
 
-    sleep_interval(start_time, temp_sensor->read_interval);
+    const TickType_t end_time = xTaskGetTickCount();
+    const float duration = (end_time-start_time) * portTICK_PERIOD_MS;
+
+    ESP_LOGI(TAG, "read temp %0.2f (avg %0.2f) in %f ms", temp, avg_temp, duration);
+
+    vTaskDelayUntil(&start_time, temp_sensor->read_interval / portTICK_PERIOD_MS);
   }
 }
 
@@ -185,8 +181,7 @@ temp_sensor_t * start_temp_sensors(gpio_num_t gpio_num, uint64_t read_interval) 
     .gpio_num = gpio_num,
     .read_interval = read_interval
   };
-
-  xTaskCreate(temp_task, "temp-sensor", STACK_SIZE, temp_sensor, 5, &temp_sensor->task_handle);
+  xTaskCreate(temp_task, "temp-sensor", STACK_SIZE, temp_sensor, ESP_TASK_MAIN_PRIO, &temp_sensor->task_handle);
 
   ESP_LOGI(TAG, "started temp-sensors task");
   return temp_sensor;

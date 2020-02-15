@@ -75,6 +75,3 @@ void set_pwm_duty(slow_pwm_t * pwm, uint32_t duty) {
   atomic_store(&(pwm->duty), duty);
 };
 
-
-
-

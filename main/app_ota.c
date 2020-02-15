@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "esp_task.h"
 #include "esp_log.h"
 #include "esp_https_ota.h"
 #include "esp_log.h"
@@ -39,7 +40,7 @@ static void handle_ota(void* arg, esp_event_base_t base, int32_t id, void* data)
   ESP_LOGI(TAG, "OTA requested ...");
 
   TaskHandle_t task_handle;
-  xTaskCreate(ota_task, "ota-task", STACK_SIZE, arg, 5, &task_handle);
+  xTaskCreate(ota_task, "ota-task", STACK_SIZE, arg, ESP_TASK_MAIN_PRIO, &task_handle);
   // TODO: vTaskDelete(task_handle);
 }
 
