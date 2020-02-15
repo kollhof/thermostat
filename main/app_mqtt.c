@@ -13,7 +13,6 @@
 
 static const char* TAG = "app-mqtt";
 
-
 typedef struct {
   esp_mqtt_client_handle_t client;
   const char * topic_prefix;
