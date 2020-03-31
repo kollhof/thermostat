@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "driver/adc.h"
+#include "nvs_flash.h"
 
 #include "slow_pwm.h"
 #include "temp_sensor.h"
@@ -41,14 +42,14 @@ static void simple_thermostat_loop(
     state->current_temp = get_temperature(temp_sensor);
     ESP_LOGI(TAG, "curr temp %f" , state->current_temp);
 
+    float temp_diff = state->current_temp - state->target_temp;
 
-    if (state->current_temp < -100) {
-      // fallback for when thermometer is unplugged
-      state->heat = 10;
-    } else if (state->current_temp < state->target_temp) {
-      state->heat = duty_max;
-    } else {
+    if (state->current_temp < -100 || temp_diff >= 0) {
       state->heat = duty_min;
+    } else if (temp_diff < -2) {
+      state->heat = 100;
+    } else {
+      state->heat = 50;
     }
     set_pwm_duty(pwm, state->heat);
 
@@ -59,11 +60,72 @@ static void simple_thermostat_loop(
 }
 
 
+static void persist_target_temp(float target_temp) {
+  nvs_handle_t nvs_handle;
+  esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvs_handle);
+
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+  } else {
+    const uint32_t store_value = *(uint32_t *)&target_temp;
+
+    err = nvs_set_u32(nvs_handle, "target_temp", store_value);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Error (%s) storing target temp", esp_err_to_name(err));
+    }
+
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Error (%s) committing storage", esp_err_to_name(err));
+    }
+
+    nvs_close(nvs_handle);
+  }
+}
+
+
+static float load_target_temp(float default_target_temp) {
+  float target_temp = default_target_temp;
+
+  nvs_handle_t nvs_handle;
+  esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvs_handle);
+
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+  } else {
+
+    err = nvs_get_u32(nvs_handle, "target_temp", (uint32_t*)&target_temp);
+    switch (err) {
+      case ESP_OK:
+        ESP_LOGI(TAG, "Read target_temp %0.3f from storage", target_temp);
+        break;
+
+      case ESP_ERR_NVS_NOT_FOUND:
+        ESP_LOGE(TAG, "The target_temp is not in storage yet!");
+        target_temp = default_target_temp;
+        break;
+
+      default :
+        ESP_LOGE(TAG, "Error (%s) reading NVS", esp_err_to_name(err));
+        target_temp = default_target_temp;
+        break;
+    }
+
+    nvs_close(nvs_handle);
+  }
+
+  return target_temp;
+}
+
+
 static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
   app_thermostat_state_t * current_state = (app_thermostat_state_t*) arg;
   float target_temp = *((float*) data);
 
   current_state->target_temp = target_temp;
+
+  persist_target_temp(target_temp);
+
   post_changed_event(current_state);
 }
 
@@ -71,7 +133,7 @@ static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t
 void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max) {
   app_thermostat_state_t state = {
     .current_temp = 20,
-    .target_temp = 10,
+    .target_temp = load_target_temp(17),
     .heat = 0
   };
 
