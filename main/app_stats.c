@@ -30,6 +30,7 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
 
   if (stats->target_temp != current_state->target_temp) {
     stats->target_temp = current_state->target_temp;
+    // force reporting stats to ack target update
     report_stats(stats);
   }
 }
@@ -44,7 +45,7 @@ static void init_led(gpio_num_t gpio_led) {
 
 void app_start_stats_handler(gpio_num_t gpio_led) {
   ESP_LOGI(TAG, "starting stats handler");
-  const int stats_interval_sec = 10;
+  const int stats_interval_sec = 60;
 
   init_led(gpio_led);
 

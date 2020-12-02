@@ -44,12 +44,16 @@ static void simple_thermostat_loop(
 
     float temp_diff = state->current_temp - state->target_temp;
 
-    if (state->current_temp < -100 || temp_diff >= 0) {
+    if (state->current_temp < -100) {
+      state->heat = duty_min;
+    } else if (temp_diff >= 2) {
+      state->heat = 0;
+    } else if (temp_diff >= 0) {
       state->heat = duty_min;
     } else if (temp_diff < -2) {
       state->heat = 100;
     } else {
-      state->heat = 50;
+      state->heat = duty_max;
     }
     set_pwm_duty(pwm, state->heat);
 
@@ -130,7 +134,7 @@ static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t
 }
 
 
-void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max) {
+void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max, uint8_t cycle_len) {
   app_thermostat_state_t state = {
     .current_temp = 20,
     .target_temp = load_target_temp(17),
@@ -138,7 +142,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t hea
   };
 
   const uint64_t temp_read_interval = 1000;
-  const uint64_t pwm_freq = 100 * sec;
+  const uint64_t pwm_freq = cycle_len * sec;
   const uint32_t pwm_resolution = 100;
   const uint32_t pwm_duty = 0;
 
