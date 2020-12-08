@@ -40,8 +40,6 @@ static void simple_thermostat_loop(
   while (true) {
     // TODO: writes should be atomic as we access state from multiple tasks
     state->current_temp = get_temperature(temp_sensor);
-    ESP_LOGI(TAG, "curr temp %f" , state->current_temp);
-
     float temp_diff = state->current_temp - state->target_temp;
 
     if (state->current_temp < -100) {

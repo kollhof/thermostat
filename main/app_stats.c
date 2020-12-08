@@ -1,6 +1,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 
 #include "./app_events.h"
 #include "./app_thermostat.h"
@@ -8,6 +9,15 @@
 
 
 static const char* TAG = "app-stats";
+
+
+
+static void set_led_level(uint8_t lvl){
+  // resolution 13 bit = 8192
+  uint32_t duty = 20 + lvl * 5;
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2, duty);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_2);
+}
 
 
 static void report_stats(void * arg) {
@@ -33,13 +43,44 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
     // force reporting stats to ack target update
     report_stats(stats);
   }
+
+  ESP_LOGI(TAG, "curr temp %f, heat: %d" , stats->current_temp, stats->heat);
+
+  if (stats->heat == 0) {
+    set_led_level(0);
+  } else if (stats->heat < 50) {
+    set_led_level(10);
+  } else if (stats->heat < 100) {
+    set_led_level(55);
+  } else {
+    set_led_level(100);
+  }
 }
 
 
+
+
 static void init_led(gpio_num_t gpio_led) {
-  gpio_pad_select_gpio(gpio_led);
-  gpio_set_direction(gpio_led, GPIO_MODE_OUTPUT);
-  gpio_set_level(gpio_led, 1);
+  ledc_timer_config_t ledc_timer = {
+    .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
+    .freq_hz = 5000,                      // frequency of PWM signal
+    .speed_mode = LEDC_LOW_SPEED_MODE,    // timer mode
+    .timer_num = LEDC_TIMER_1,            // timer index
+    .clk_cfg = LEDC_AUTO_CLK,             // Auto select the source clock
+  };
+  ledc_channel_config_t ledc_channel =  {
+    .channel    = LEDC_CHANNEL_2,
+    .duty       = 0,
+    .gpio_num   = gpio_led,
+    .speed_mode = LEDC_LOW_SPEED_MODE,
+    .hpoint     = 0,
+    .timer_sel  = LEDC_TIMER_1
+  };
+
+  // Set configuration of timer0 for high speed channels
+  ledc_timer_config(&ledc_timer);
+  ledc_channel_config(&ledc_channel);
+  set_led_level(50);
 }
 
 
