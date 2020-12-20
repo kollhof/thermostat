@@ -1,0 +1,8 @@
+hw_model,hw_rev,gpio_led,gpio_pwm,gpio_temp,heat_min,heat_max,heat_cycle,ota_uri,ota_cert,mqtt_uri,root_cert_pem,client_cert_pem,client_key_pem
+pico32,0.0.1,25,26,19,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+proto1,0.0.1,18,27,25,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+proto2,0.0.2,32,19,21,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+proto4,0.0.4,13,22,23,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+therm1,0.0.2,2,16,4,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+therm1,0.0.2,2,16,4,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key
+therm1,0.0.2,2,16,4,5,50,10,secret/ota/ota-uri.txt,secret/ota/ota_ca_cert.pem,secret/aws/mqtt-uri.txt,secret/aws/aws-root-ca.pem,secret/aws/aws-certificate.pem.crt,secret/aws/aws-private.pem.key

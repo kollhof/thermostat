@@ -35,7 +35,10 @@ static void simple_thermostat_loop(
     uint8_t duty_min,
     uint8_t duty_max
 ) {
-  ESP_LOGI(TAG, "starting simple thermostat algorithm");
+  ESP_LOGI(
+    TAG, "starting simple thermostat algorithm target: %f°C, duty: %u-%u",
+    state->target_temp, duty_min, duty_max
+  );
 
   while (true) {
     // TODO: writes should be atomic as we access state from multiple tasks
@@ -86,56 +89,23 @@ static void persist_target_temp(float target_temp) {
 }
 
 
-static float load_target_temp(float default_target_temp) {
-  float target_temp = default_target_temp;
-
-  nvs_handle_t nvs_handle;
-  esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvs_handle);
-
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
-  } else {
-
-    err = nvs_get_u32(nvs_handle, "target_temp", (uint32_t*)&target_temp);
-    switch (err) {
-      case ESP_OK:
-        ESP_LOGI(TAG, "Read target_temp %0.3f from storage", target_temp);
-        break;
-
-      case ESP_ERR_NVS_NOT_FOUND:
-        ESP_LOGE(TAG, "The target_temp is not in storage yet!");
-        target_temp = default_target_temp;
-        break;
-
-      default :
-        ESP_LOGE(TAG, "Error (%s) reading NVS", esp_err_to_name(err));
-        target_temp = default_target_temp;
-        break;
-    }
-
-    nvs_close(nvs_handle);
-  }
-
-  return target_temp;
-}
-
-
 static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
   app_thermostat_state_t * current_state = (app_thermostat_state_t*) arg;
   float target_temp = *((float*) data);
 
   current_state->target_temp = target_temp;
 
+  // TODO: should not live here
   persist_target_temp(target_temp);
 
   post_changed_event(current_state);
 }
 
 
-void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max, uint8_t cycle_len) {
+void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max, uint8_t cycle_len, float target_temp) {
   app_thermostat_state_t state = {
     .current_temp = 20,
-    .target_temp = load_target_temp(17),
+    .target_temp = target_temp,
     .heat = 0
   };
 

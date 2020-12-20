@@ -93,6 +93,8 @@ static void sensors_init(Sensors * sensors, uint8_t gpio) {
 
   int num_devices = find_devices(sensors->bus, device_rom_codes);
 
+  sensors->num_devices = num_devices;
+
   for (int i = 0; i < num_devices; ++i) {
     DS18B20_Info * ds18b20_info = ds18b20_malloc();
     sensors->devices[i] = ds18b20_info;
@@ -111,18 +113,25 @@ static void sensors_init(Sensors * sensors, uint8_t gpio) {
 }
 
 
-static float read_temperature(DS18B20_Info * device) {
+static float read_temperature(Sensors * sensors) {
   float reading = 0;
 
-  ds18b20_convert_all(device->bus);
-  ds18b20_wait_for_conversion(device);
-  DS18B20_ERROR err = ds18b20_read_temp(device, &reading);
+  if (sensors->num_devices > 0) {
+    DS18B20_Info * device = sensors->devices[0];
+    ds18b20_convert_all(device->bus);
+    ds18b20_wait_for_conversion(device);
+    DS18B20_ERROR err = ds18b20_read_temp(device, &reading);
 
-  if (err == DS18B20_OK) {
-    return reading;
+    if (err == DS18B20_OK) {
+      return reading;
+    }
+
+    ESP_LOGE(TAG, "error reading temp %u", err);
+  } else {
+
+    ESP_LOGE(TAG, "no temp devices found");
   }
 
-  ESP_LOGE(TAG, "error reading temp %u", err);
   return 100;
 }
 
@@ -152,7 +161,7 @@ static void temp_task(void * arg) {
   while(true) {
     TickType_t start_time = xTaskGetTickCount();
 
-    const float temp = read_temperature(sensors.devices[0]);
+    const float temp = read_temperature(&sensors);
 
     avg_temp = exp_weighted_moving_avg(avg_temp, temp, alpha);
 

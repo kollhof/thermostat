@@ -1,15 +1,14 @@
 #pragma once
 
-#include "esp_wifi.h"
-
+#include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-void app_start_network(wifi_config_t * config);
-
+esp_err_t app_start_networking(TickType_t ticks_to_wait);
+void app_init_networking();
 
 #ifdef __cplusplus
 }

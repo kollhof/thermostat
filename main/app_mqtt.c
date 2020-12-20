@@ -64,13 +64,16 @@ static void handle_ip_event(void* arg, esp_event_base_t evt_base, int32_t evt_id
 }
 
 
+
 static void handle_connected(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
   ctx_t * ctx = (ctx_t *) arg;
   subscribe(ctx, "/target-temp/set");
   subscribe(ctx, "/stats/get");
   subscribe(ctx, "/system/ota");
   subscribe(ctx, "/system/restart");
+  subscribe(ctx, "/system/reset/#");
 }
+
 
 
 static void handle_message(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
@@ -88,6 +91,18 @@ static void handle_message(void *arg, esp_event_base_t event_base, int32_t event
 
   } else if (topic_matches(event, ctx, "/system/restart")) {
     app_post_event(APP_EVENT_RESTART, NULL, 0);
+
+  } else if (topic_matches(event, ctx, "/system/reset/factory")) {
+    app_post_event(APP_EVENT_RESET_FACTORY, NULL, 0);
+
+  } else if (topic_matches(event, ctx, "/system/reset/homekit")) {
+    app_post_event(APP_EVENT_RESET_HOMEKIT, NULL, 0);
+
+  } else if (topic_matches(event, ctx, "/system/reset/network")) {
+    app_post_event(APP_EVENT_RESET_NETWORK, NULL, 0);
+
+  } else if (topic_matches(event, ctx, "/system/reset/pairing")) {
+    app_post_event(APP_EVENT_RESET_PAIRING, NULL, 0);
 
   } else if (topic_matches(event, ctx, "/stats/get")) {
     app_post_event(APP_EVENT_STATS_GET, NULL, 0);
@@ -160,7 +175,8 @@ static void handle_time_updated(void* arg, esp_event_base_t evt_base, int32_t ev
 
 
 void app_start_mqtt(esp_mqtt_client_config_t * config, const char* topic_prefix) {
-  ESP_LOGI(TAG, "setting up MQTT client for %s", config->uri);
+  ESP_LOGI(TAG, "setting up MQTT client for %s topic: %s", config->uri, topic_prefix);
+  // ESP_LOGI(TAG, "\n%s\n%s\n%s", config->cert_pem, config->client_cert_pem, config->client_cert_pem);
 
   ctx_t * ctx = malloc(sizeof(ctx_t));
 
@@ -168,7 +184,6 @@ void app_start_mqtt(esp_mqtt_client_config_t * config, const char* topic_prefix)
 
   ctx->client = esp_mqtt_client_init(config);
   ctx->topic_prefix = topic_prefix;
-
 
   esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, handle_ip_event, ctx->client);
   esp_mqtt_client_register_event(ctx->client, MQTT_EVENT_CONNECTED, handle_connected, ctx);

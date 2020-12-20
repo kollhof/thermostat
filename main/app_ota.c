@@ -47,6 +47,6 @@ static void handle_ota(void* arg, esp_event_base_t base, int32_t id, void* data)
 
 void app_start_ota_handler(esp_http_client_config_t * config) {
   app_register_evt_handler(APP_EVENT_OTA, handle_ota, config);
-  ESP_LOGI(TAG, "OTA updater started");
+  ESP_LOGI(TAG, "OTA updater started for %s", config->url);
 }
 
