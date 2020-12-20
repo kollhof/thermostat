@@ -1,0 +1,15 @@
+app,namespace,
+hw_model,data,string
+hw_rev,data,string
+gpio_led,data,u8
+gpio_pwm,data,u8
+gpio_temp,data,u8
+heat_min,data,u8
+heat_max,data,u8
+heat_cycle,data,u8
+ota_uri,file,string
+ota_cert,file,string
+mqtt_uri,file,string
+root_cert_pem,file,string
+client_cert_pem,file,string
+client_key_pem,file,string

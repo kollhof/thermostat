@@ -11,6 +11,7 @@
 #include "driver/gpio.h"
 
 #include "./app_wifi.h"
+#include "./app_homekit.h"
 #include "./app_mqtt.h"
 #include "./app_timekeeper.h"
 #include "./app_thermostat.h"
@@ -22,27 +23,43 @@
 
 static const char* TAG = "app";
 
-extern const uint8_t ota_ca_cert_pem[] asm("_binary_ota_ca_cert_pem_start");
-extern const uint8_t ota_ca_cert_pem_end[] asm("_binary_ota_ca_cert_pem_start");
 
-extern const uint8_t aws_root_ca_pem[] asm("_binary_aws_root_ca_pem_start");
-extern const uint8_t aws_root_ca_pem_end[] asm("_binary_aws_root_ca_pem_end");
+typedef struct {
+  char * hw_model;
+  char * hw_serial;
+  char * hw_rev;
 
-extern const uint8_t aws_certificate_pem_crt[] asm("_binary_aws_certificate_pem_crt_start");
-extern const uint8_t aws_certificate_pem_crt_end[] asm("_binary_aws_certificate_pem_crt_end");
+  uint8_t gpio_pwm;
+  uint8_t gpio_temp;
+  uint8_t gpio_led;
+  uint8_t heat_min;
+  uint8_t heat_max;
+  uint8_t heat_cycle_sec;
 
-extern const uint8_t aws_private_pem_key[] asm("_binary_aws_private_pem_key_start");
-extern const uint8_t aws_private_pem_key_end[] asm("_binary_aws_private_pem_key_end");
+  char * mqtt_uri;
+  char * mqtt_root_ca;
+  char * mqtt_client_cert;
+  char * mqtt_client_key;
+
+  char * ota_uri;
+  char * ota_cert;
+} app_config_t;
+
+
 
 
 static void init_logging() {
   esp_log_level_set("*", ESP_LOG_VERBOSE);
+  esp_log_level_set("nvs", ESP_LOG_VERBOSE);
   esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
   esp_log_level_set("TRANSPORT_TCP", ESP_LOG_VERBOSE);
   esp_log_level_set("TRANSPORT_SSL", ESP_LOG_VERBOSE);
   esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
   esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
+
+  ESP_LOGI(TAG, "logging initialized");
 }
+
 
 
 static void init_nvs() {
@@ -54,7 +71,10 @@ static void init_nvs() {
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
+
+  ESP_ERROR_CHECK(nvs_flash_init_partition("factory_nvs"));
 }
+
 
 
 static void init_system() {
@@ -65,52 +85,165 @@ static void init_system() {
   ESP_LOGI(TAG, "IDF version: %s", esp_get_idf_version());
 
   esp_event_loop_create_default();
+
   init_nvs();
 }
+
+
+
+static esp_err_t get_u8(nvs_handle_t handle, const char *key, uint8_t *out_value) {
+  esp_err_t err = nvs_get_u8(handle, key, out_value);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error reading %s: %s NVS", key, esp_err_to_name(err));
+  } else {
+    ESP_LOGI(TAG, "Loaded %s: %u", key, *out_value);
+  }
+  return err;
+}
+
+
+static esp_err_t get_str(nvs_handle_t handle, const char *key, char **out_value) {
+  size_t required_size;
+
+  esp_err_t err = nvs_get_str(handle, key, NULL, &required_size);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error reading %s: %s NVS", key, esp_err_to_name(err));
+  } else {
+    char* value = malloc(required_size);
+    nvs_get_str(handle, key, value, &required_size);
+    ESP_LOGI(TAG, "Loaded %s: %s", key, value);
+    *out_value = value;
+  }
+  return err;
+}
+
+
+
+char * get_serial_number() {
+  uint8_t mac[6] = {0};
+  esp_efuse_mac_get_default(mac);
+
+  char * str = malloc(16);
+  snprintf(str, 16, "%02x%02x-%02x%02x-%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  return str;
+}
+
+
+
+static esp_err_t init_app_config(app_config_t * config) {
+  ESP_LOGI(TAG, "init config...");
+
+  config->hw_serial = get_serial_number();
+
+  nvs_handle handle;
+  esp_err_t err = nvs_open_from_partition("factory_nvs", "app", NVS_READONLY, &handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error (%s) opening NVS handle for 'factory_nvs:app'", esp_err_to_name(err));
+    return err;
+  }
+
+  err = get_str(handle, "hw_model", &config->hw_model);
+  err = get_str(handle, "hw_rev", &config->hw_rev);
+
+  err = get_u8(handle, "gpio_pwm", &config->gpio_pwm);
+  err = get_u8(handle, "gpio_temp", &config->gpio_temp);
+  err = get_u8(handle, "gpio_led", &config->gpio_led);
+  err = get_u8(handle, "heat_min", &config->heat_min);
+  err = get_u8(handle, "heat_max", &config->heat_max);
+  err = get_u8(handle, "heat_cycle", &config->heat_cycle_sec);
+
+  err = get_str(handle, "mqtt_uri", &config->mqtt_uri);
+  err = get_str(handle, "root_cert_pem", &config->mqtt_root_ca);
+  err = get_str(handle, "client_cert_pem", &config->mqtt_client_cert);
+  err = get_str(handle, "client_key_pem", &config->mqtt_client_key);
+
+  err = get_str(handle, "ota_uri", &config->ota_uri);
+  err = get_str(handle, "ota_cert", &config->ota_cert);
+
+  return err;
+}
+
+
+
+static float load_target_temp(float default_target_temp) {
+  float target_temp = default_target_temp;
+
+  nvs_handle_t nvs_handle;
+  esp_err_t err = nvs_open("storage", NVS_READWRITE, &nvs_handle);
+
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+  } else {
+
+    err = nvs_get_u32(nvs_handle, "target_temp", (uint32_t*)&target_temp);
+    switch (err) {
+      case ESP_OK:
+        ESP_LOGI(TAG, "Read target_temp %0.3f from storage", target_temp);
+        break;
+
+      case ESP_ERR_NVS_NOT_FOUND:
+        ESP_LOGE(TAG, "The target_temp is not in storage yet!");
+        target_temp = default_target_temp;
+        break;
+
+      default :
+        ESP_LOGE(TAG, "Error (%s) reading NVS", esp_err_to_name(err));
+        target_temp = default_target_temp;
+        break;
+    }
+
+    nvs_close(nvs_handle);
+  }
+
+  return target_temp;
+}
+
 
 
 void app_main(void) {
   ESP_LOGI(TAG, "starting...");
   init_system();
 
-  const char * device_id = CONFIG_APP_DEVICE_ID;
-
-  wifi_config_t wifi_config = {
-    .sta = {
-      .ssid = CONFIG_APP_WIFI_SSID,
-      .password = CONFIG_APP_WIFI_PASSWORD
-    },
+  app_config_t conf = {
+    .gpio_pwm = 25,
+    .gpio_temp = 26,
+    .gpio_led = 27,
+    .heat_min = 5,
+    .heat_max = 50,
+    .heat_cycle_sec = 1
   };
+  init_app_config(&conf);
+
+  app_init_networking();
 
   esp_mqtt_client_config_t mqtt_config = {
-    .uri = CONFIG_APP_MQTT_URI,
-    .cert_pem = (const char *) aws_root_ca_pem,
-    .client_cert_pem = (const char *) aws_certificate_pem_crt,
-    .client_key_pem = (const char *) aws_private_pem_key,
+    .uri = conf.mqtt_uri,
+    .cert_pem = conf.mqtt_root_ca,
+    .client_cert_pem = conf.mqtt_client_cert,
+    .client_key_pem = conf.mqtt_client_key,
   };
+  app_start_mqtt(&mqtt_config, conf.hw_serial);
 
-  esp_http_client_config_t ota_config = {
-    .url = CONFIG_APP_OTA_URI,
-    .cert_pem = (char *)ota_ca_cert_pem,
-  };
+  app_start_networking(portMAX_DELAY);
 
-  // TODO: pull from board config
-  const gpio_num_t gpio_pwm = CONFIG_APP_PWM_GPIO;
-  const gpio_num_t gpio_temp = CONFIG_APP_TEMP_GPIO;
-  const gpio_num_t gpio_led = CONFIG_APP_LED_GPIO;
-  const uint8_t heat_min = CONFIG_APP_HEAT_MIN;
-  const uint8_t heat_max = CONFIG_APP_HEAT_MAX;
-  const uint8_t cycle_len = CONFIG_APP_HEAT_CYCLE_LEN;
-
-  app_start_network(&wifi_config);
-  app_start_mqtt(&mqtt_config, device_id);
+  app_start_homekit(conf.hw_model, conf.hw_rev, conf.hw_serial);
 
   app_start_restart_handler();
-  app_start_ota_handler(&ota_config);
-  app_start_timekeeper();
-  app_start_stats_handler(gpio_led);
 
-  app_start_thermostat(gpio_pwm, gpio_temp, heat_min, heat_max, cycle_len);
+  esp_http_client_config_t ota_config = {
+    .url = conf.ota_uri,
+    .cert_pem = conf.ota_cert,
+  };
+  app_start_ota_handler(&ota_config);
+
+  app_start_timekeeper();
+  app_start_stats_handler(conf.gpio_led);
+
+  app_start_thermostat(
+    conf.gpio_pwm, conf.gpio_temp,
+    conf.heat_min, conf.heat_max, conf.heat_cycle_sec,
+    load_target_temp(17)
+  );
 
   // TODO: should never reach this point
   ESP_LOGI(TAG, "main task returned unexpectedly, restarting ...");
