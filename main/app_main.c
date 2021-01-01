@@ -33,8 +33,10 @@ typedef struct {
   uint8_t gpio_temp;
   uint8_t gpio_led;
   uint8_t heat_min;
+  uint8_t heat_normal;
   uint8_t heat_max;
   uint8_t heat_cycle_sec;
+  float target_temp;
 
   char * mqtt_uri;
   char * mqtt_root_ca;
@@ -43,6 +45,7 @@ typedef struct {
 
   char * ota_uri;
   char * ota_cert;
+
 } app_config_t;
 
 
@@ -149,6 +152,7 @@ static esp_err_t init_app_config(app_config_t * config) {
   err = get_u8(handle, "gpio_temp", &config->gpio_temp);
   err = get_u8(handle, "gpio_led", &config->gpio_led);
   err = get_u8(handle, "heat_min", &config->heat_min);
+  err = get_u8(handle, "heat_normal", &config->heat_normal);
   err = get_u8(handle, "heat_max", &config->heat_max);
   err = get_u8(handle, "heat_cycle", &config->heat_cycle_sec);
 
@@ -159,6 +163,7 @@ static esp_err_t init_app_config(app_config_t * config) {
 
   err = get_str(handle, "ota_uri", &config->ota_uri);
   err = get_str(handle, "ota_cert", &config->ota_cert);
+
 
   return err;
 }
@@ -209,8 +214,10 @@ void app_main(void) {
     .gpio_temp = 26,
     .gpio_led = 27,
     .heat_min = 5,
-    .heat_max = 50,
-    .heat_cycle_sec = 1
+    .heat_normal = 50,
+    .heat_max = 80,
+    .heat_cycle_sec = 1,
+    .target_temp = load_target_temp(17)
   };
   init_app_config(&conf);
 
@@ -226,7 +233,7 @@ void app_main(void) {
 
   app_start_networking(portMAX_DELAY);
 
-  app_start_homekit(conf.hw_model, conf.hw_rev, conf.hw_serial);
+  app_start_homekit(conf.hw_model, conf.hw_rev, conf.hw_serial, conf.target_temp);
 
   app_start_restart_handler();
 
@@ -241,8 +248,9 @@ void app_main(void) {
 
   app_start_thermostat(
     conf.gpio_pwm, conf.gpio_temp,
-    conf.heat_min, conf.heat_max, conf.heat_cycle_sec,
-    load_target_temp(17)
+    conf.heat_min, conf.heat_normal ,conf.heat_max,
+    conf.heat_cycle_sec,
+    conf.target_temp
   );
 
   // TODO: should never reach this point

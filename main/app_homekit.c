@@ -135,7 +135,7 @@ static void handle_thermo_change(void* arg, esp_event_base_t evt_base, int32_t e
 
 
 
-void app_start_homekit(char * model, char * hw_rev, char * serial_num) {
+void app_start_homekit(char * model, char * hw_rev, char * serial_num, float target_temp) {
   /* Configure HomeKit core to make the Accessory name (and thus the WAC SSID) unique,
    * instead of the default configuration wherein only the WAC SSID is made unique.
    */
@@ -169,7 +169,7 @@ void app_start_homekit(char * model, char * hw_rev, char * serial_num) {
   hap_acc_add_product_data(accessory, product_data, sizeof(product_data));
 
   // TODO: get initial values from main
-  hap_serv_t * service = hap_serv_thermostat_create(0 /*0=OFF, 1=HEAT, 2=COOL*/, 3 /* TODO: 3=AUTO */, 20, 20, 0);
+  hap_serv_t * service = hap_serv_thermostat_create(0 /*0=OFF, 1=HEAT, 2=COOL*/, 3 /* TODO: 3=AUTO */, 20, target_temp, 0);
 
   hap_serv_set_write_cb(service, thermo_write);
 

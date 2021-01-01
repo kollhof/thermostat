@@ -19,6 +19,7 @@ void app_start_thermostat(
   gpio_num_t gpio_pwm,
   gpio_num_t gpio_temp,
   uint8_t heat_min,
+  uint8_t heat_normal,
   uint8_t heat_max,
   uint8_t cycle_len,
   float target_temp

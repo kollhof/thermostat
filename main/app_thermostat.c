@@ -33,11 +33,12 @@ static void simple_thermostat_loop(
     slow_pwm_t * pwm,
     app_thermostat_state_t * state,
     uint8_t duty_min,
+    uint8_t duty_normal,
     uint8_t duty_max
 ) {
   ESP_LOGI(
-    TAG, "starting simple thermostat algorithm target: %f°C, duty: %u-%u",
-    state->target_temp, duty_min, duty_max
+    TAG, "starting simple thermostat algorithm target: %f°C, duty: %u-%u-%u",
+    state->target_temp, duty_min, duty_normal, duty_max
   );
 
   while (true) {
@@ -52,9 +53,9 @@ static void simple_thermostat_loop(
     } else if (temp_diff >= 0) {
       state->heat = duty_min;
     } else if (temp_diff < -2) {
-      state->heat = 100;
-    } else {
       state->heat = duty_max;
+    } else {
+      state->heat = duty_normal;
     }
     set_pwm_duty(pwm, state->heat);
 
@@ -102,7 +103,7 @@ static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t
 }
 
 
-void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_max, uint8_t cycle_len, float target_temp) {
+void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_normal, uint8_t heat_max, uint8_t cycle_len, float target_temp) {
   app_thermostat_state_t state = {
     .current_temp = 20,
     .target_temp = target_temp,
@@ -120,7 +121,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t hea
   temp_sensor_t * temp_sensor = start_temp_sensors(gpio_temp, temp_read_interval);
   slow_pwm_t * pwm = start_pwm(pwm_freq, pwm_resolution, pwm_duty, gpio_pwm);
 
-  simple_thermostat_loop(temp_sensor, pwm, &state, heat_min, heat_max);
+  simple_thermostat_loop(temp_sensor, pwm, &state, heat_min, heat_normal, heat_max);
 
   // TODO: will never reach this point
   stop_temp_sensors(temp_sensor);
