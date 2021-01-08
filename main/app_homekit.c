@@ -109,7 +109,7 @@ static int thermo_write(hap_write_data_t write_data[], int count, void *serv_pri
       ESP_LOGI(TAG, "write HAP_CHAR_UUID_TARGET_TEMPERATURE");
 
       float target_temp = write->val.f;
-      app_post_event(APP_EVENT_TARGET_TEMP_SET, &target_temp, sizeof(target_temp));
+      app_post_event(APP_EVENT_TARGET_TEMP_CHANGED, &target_temp, sizeof(target_temp));
     }
   }
   return ret;

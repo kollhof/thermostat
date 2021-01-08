@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 
 #include "unistd.h"
+
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "driver/adc.h"
@@ -22,48 +23,6 @@
 
 static const char* TAG = "app-thermostat";
 
-
-static void post_changed_event(app_thermostat_state_t * state) {
-  app_post_event(APP_EVENT_THERMOSTAT_CHANGED, state, sizeof(app_thermostat_state_t));
-}
-
-
-static void simple_thermostat_loop(
-    temp_sensor_t * temp_sensor,
-    slow_pwm_t * pwm,
-    app_thermostat_state_t * state,
-    uint8_t duty_min,
-    uint8_t duty_normal,
-    uint8_t duty_max
-) {
-  ESP_LOGI(
-    TAG, "starting simple thermostat algorithm target: %f°C, duty: %u-%u-%u",
-    state->target_temp, duty_min, duty_normal, duty_max
-  );
-
-  while (true) {
-    // TODO: writes should be atomic as we access state from multiple tasks
-    state->current_temp = get_temperature(temp_sensor);
-    float temp_diff = state->current_temp - state->target_temp;
-
-    if (state->current_temp < -100) {
-      state->heat = duty_min;
-    } else if (temp_diff >= 2) {
-      state->heat = 0;
-    } else if (temp_diff >= 0) {
-      state->heat = duty_min;
-    } else if (temp_diff < -2) {
-      state->heat = duty_max;
-    } else {
-      state->heat = duty_normal;
-    }
-    set_pwm_duty(pwm, state->heat);
-
-    post_changed_event(state);
-
-    sleep(1);
-  }
-}
 
 
 static void persist_target_temp(float target_temp) {
@@ -90,42 +49,90 @@ static void persist_target_temp(float target_temp) {
 }
 
 
-static void handle_set_target_temp(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
-  app_thermostat_state_t * current_state = (app_thermostat_state_t*) arg;
-  float target_temp = *((float*) data);
 
-  current_state->target_temp = target_temp;
-
-  // TODO: should not live here
-  persist_target_temp(target_temp);
-
-  post_changed_event(current_state);
+static void post_changed_event(app_thermostat_state_t * state) {
+  app_post_event(APP_EVENT_THERMOSTAT_CHANGED, state, sizeof(app_thermostat_state_t));
 }
 
 
-void app_start_thermostat(gpio_num_t gpio_pwm, gpio_num_t gpio_temp, uint8_t heat_min, uint8_t heat_normal, uint8_t heat_max, uint8_t cycle_len, float target_temp) {
-  app_thermostat_state_t state = {
-    .current_temp = 20,
-    .target_temp = target_temp,
-    .heat = 0
-  };
 
-  const uint64_t temp_read_interval = 1000;
+static void handle_temp_change(app_thermostat_state_t * state){
+  ESP_LOGI(TAG, "calculating new heat: %f -> %f", state->current_temp, state->target_temp);
+
+  float temp_diff = state->current_temp - state->target_temp;
+
+  uint8_t heat = state->heat;
+
+  if (state->current_temp < -100) {
+    heat = state->heat_min;
+  } else if (temp_diff >= 2) {
+    heat = 0;
+  } else if (temp_diff >= 0) {
+    heat = state->heat_min;
+  } else if (temp_diff < -2) {
+    heat = state->heat_max;
+  } else {
+    heat = state->heat_normal;
+  }
+
+  state->heat = heat;
+  post_changed_event(state);
+}
+
+
+
+static void handle_traget_temp_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+
+  app_thermostat_state_t * state = (app_thermostat_state_t*) arg;
+  float target_temp = *((float*) data);
+
+  state->target_temp = target_temp;
+  // TODO: should not live here
+  persist_target_temp(target_temp);
+  handle_temp_change(state);
+}
+
+
+
+static void handle_current_temp_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  app_thermostat_state_t * state = (app_thermostat_state_t*) arg;
+  float temp = *((float*) data);
+  state->current_temp = temp;
+  handle_temp_change(state);
+}
+
+
+
+static void handle_heat_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  slow_pwm_t * pwm = (slow_pwm_t*) arg;
+  app_thermostat_state_t * state = (app_thermostat_state_t*) data;
+  set_pwm_duty(pwm, state->heat);
+}
+
+
+
+void app_start_thermostat(gpio_num_t gpio_pwm, uint8_t heat_min, uint8_t heat_normal, uint8_t heat_max, uint8_t cycle_len, float target_temp) {
+  ESP_LOGI(TAG, "starting thermostat min, normal, max: %d, %d, %d -> %f", heat_min, heat_normal, heat_max, target_temp);
+
   const uint64_t pwm_freq = cycle_len * sec;
   const uint32_t pwm_resolution = 100;
   const uint32_t pwm_duty = 0;
 
-  app_register_evt_handler(APP_EVENT_TARGET_TEMP_SET, handle_set_target_temp, &state);
-
-  ESP_LOGI(TAG, "starting temp sensors and heating PWM driver");
-  temp_sensor_t * temp_sensor = start_temp_sensors(gpio_temp, temp_read_interval);
   slow_pwm_t * pwm = start_pwm(pwm_freq, pwm_resolution, pwm_duty, gpio_pwm);
 
-  simple_thermostat_loop(temp_sensor, pwm, &state, heat_min, heat_normal, heat_max);
+  app_thermostat_state_t * state = malloc(sizeof(app_thermostat_state_t));
+  *state = (app_thermostat_state_t) {
+    .current_temp = 20,
+    .target_temp = target_temp,
+    .heat = 0,
+    .heat_min = heat_min,
+    .heat_max = heat_max,
+    .heat_normal = heat_normal,
+  };
 
-  // TODO: will never reach this point
-  stop_temp_sensors(temp_sensor);
-  stop_pwm(pwm);
+  app_register_evt_handler(APP_EVENT_TARGET_TEMP_CHANGED, handle_traget_temp_changed, state);
+  app_register_evt_handler(APP_EVENT_CURRENT_TEMP_CHANGED, handle_current_temp_changed, state);
+  app_register_evt_handler(APP_EVENT_THERMOSTAT_CHANGED, handle_heat_changed, pwm);
 }
 
 

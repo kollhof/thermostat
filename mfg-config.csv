@@ -5,6 +5,7 @@ gpio_led,data,u8
 gpio_pwm,data,u8
 gpio_temp,data,u8
 heat_min,data,u8
+heat_normal,data,u8
 heat_max,data,u8
 heat_cycle,data,u8
 ota_uri,file,string

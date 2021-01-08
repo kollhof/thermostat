@@ -14,7 +14,7 @@ Comment3 "https://creativecommons.org/licenses/by-sa/4.0/"
 Comment4 "Released under Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) license"
 $EndDescr
 $Comp
-L RAC03-05SK:RAC03-05SK PS1
+L thermostat-rescue:RAC03-05SK-RAC03-05SK PS1
 U 1 1 5E188AC8
 P 1850 1300
 F 0 "PS1" H 1850 1767 50  0000 C CNN
@@ -43,22 +43,20 @@ $EndComp
 $Comp
 L power:GND #PWR0102
 U 1 1 5E197C12
-P 4450 1750
-F 0 "#PWR0102" H 4450 1500 50  0001 C CNN
-F 1 "GND" H 4455 1577 50  0000 C CNN
-F 2 "" H 4450 1750 50  0001 C CNN
-F 3 "" H 4450 1750 50  0001 C CNN
-	1    4450 1750
+P 4500 1750
+F 0 "#PWR0102" H 4500 1500 50  0001 C CNN
+F 1 "GND" H 4505 1577 50  0000 C CNN
+F 2 "" H 4500 1750 50  0001 C CNN
+F 3 "" H 4500 1750 50  0001 C CNN
+	1    4500 1750
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	900  1500 1050 1500
 Wire Wire Line
-	4450 1100 4200 1100
+	4500 1100 4250 1100
 Wire Wire Line
-	3600 1100 3450 1100
-Wire Wire Line
-	4450 1000 4450 1100
+	4500 1000 4500 1100
 $Comp
 L power:GND #PWR0106
 U 1 1 5E1A6C50
@@ -75,12 +73,12 @@ Wire Wire Line
 $Comp
 L power:GND #PWR0107
 U 1 1 5E19D035
-P 3900 1750
-F 0 "#PWR0107" H 3900 1500 50  0001 C CNN
-F 1 "GND" H 3905 1577 50  0000 C CNN
-F 2 "" H 3900 1750 50  0001 C CNN
-F 3 "" H 3900 1750 50  0001 C CNN
-	1    3900 1750
+P 3950 1750
+F 0 "#PWR0107" H 3950 1500 50  0001 C CNN
+F 1 "GND" H 3955 1577 50  0000 C CNN
+F 2 "" H 3950 1750 50  0001 C CNN
+F 3 "" H 3950 1750 50  0001 C CNN
+	1    3950 1750
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -341,12 +339,10 @@ F 3 "~" H 1900 2900 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3200 1300 3200 1100
+	4500 1600 4500 1750
 Wire Wire Line
-	4450 1600 4450 1750
-Wire Wire Line
-	4450 1300 4450 1100
-Connection ~ 4450 1100
+	4500 1300 4500 1100
+Connection ~ 4500 1100
 $Comp
 L Connector_Generic:Conn_01x08 J5
 U 1 1 5E7E2B11
@@ -460,27 +456,20 @@ F 3 "~" H 10950 6950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Regulator_Linear:AP2112K-3.3 U1
+L thermostat-rescue:AP2112K-3.3-Regulator_Linear U1
 U 1 1 5E282F83
-P 3900 1200
-F 0 "U1" H 3900 1542 50  0000 C CNN
-F 1 "AP2112K-3.3" H 3900 1451 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-5" H 3900 1525 50  0001 C CNN
-F 3 "https://www.diodes.com/assets/Datasheets/AP2112.pdf" H 3900 1300 50  0001 C CNN
-	1    3900 1200
+P 3950 1200
+F 0 "U1" H 3950 1542 50  0000 C CNN
+F 1 "AP2112K-3.3" H 3950 1451 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 3950 1525 50  0001 C CNN
+F 3 "https://www.diodes.com/assets/Datasheets/AP2112.pdf" H 3950 1300 50  0001 C CNN
+	1    3950 1200
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3900 1500 3900 1750
+	3950 1500 3950 1750
 Wire Wire Line
 	3200 1600 3200 1750
-Wire Wire Line
-	3600 1200 3450 1200
-Wire Wire Line
-	3450 1200 3450 1100
-Connection ~ 3450 1100
-Wire Wire Line
-	3450 1100 3200 1100
 Text GLabel 2200 4800 2    50   Input ~ 0
 boot
 Wire Wire Line
@@ -559,12 +548,12 @@ $EndComp
 $Comp
 L power:+3.3V #PWR0111
 U 1 1 5E3BBB30
-P 4450 1000
-F 0 "#PWR0111" H 4450 850 50  0001 C CNN
-F 1 "+3.3V" H 4465 1173 50  0000 C CNN
-F 2 "" H 4450 1000 50  0001 C CNN
-F 3 "" H 4450 1000 50  0001 C CNN
-	1    4450 1000
+P 4500 1000
+F 0 "#PWR0111" H 4500 850 50  0001 C CNN
+F 1 "+3.3V" H 4515 1173 50  0000 C CNN
+F 2 "" H 4500 1000 50  0001 C CNN
+F 3 "" H 4500 1000 50  0001 C CNN
+	1    4500 1000
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -589,9 +578,6 @@ F 3 "" H 3200 1000 50  0001 C CNN
 	1    3200 1000
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	3200 1000 3200 1100
-Connection ~ 3200 1100
 Wire Wire Line
 	2700 1000 2700 1100
 Wire Wire Line
@@ -710,20 +696,20 @@ $EndComp
 $Comp
 L Device:C C2
 U 1 1 5E18D490
-P 4450 1450
-F 0 "C2" H 4550 1500 50  0000 L CNN
-F 1 "2.2uF" H 4550 1400 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 4488 1300 50  0001 C CNN
-F 3 "~" H 4450 1450 50  0001 C CNN
-	1    4450 1450
+P 4500 1450
+F 0 "C2" H 4600 1500 50  0000 L CNN
+F 1 "1.0uF" H 4600 1400 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 4538 1300 50  0001 C CNN
+F 3 "~" H 4500 1450 50  0001 C CNN
+	1    4500 1450
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C1
 U 1 1 5E28ABB3
 P 3200 1450
-F 0 "C1" H 3300 1500 50  0000 L CNN
-F 1 "1.0uF" H 3300 1400 50  0000 L CNN
+F 0 "C1" H 2900 1500 50  0000 L CNN
+F 1 "1.0uF" H 2850 1400 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 3315 1359 50  0001 L CNN
 F 3 "~" H 3200 1450 50  0001 C CNN
 	1    3200 1450
@@ -745,7 +731,7 @@ L Device:C C5
 U 1 1 5E2DA3DF
 P 1000 2900
 F 0 "C5" H 1100 2950 50  0000 L CNN
-F 1 "22uF" H 1100 2850 50  0000 L CNN
+F 1 "10uF" H 1100 2850 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 1115 2809 50  0001 L CNN
 F 3 "~" H 1000 2900 50  0001 C CNN
 	1    1000 2900
@@ -795,9 +781,9 @@ Wire Notes Line
 Text Notes 5000 650  0    50   ~ 0
 Buttons + Status LED
 Text GLabel 6350 3000 0    50   Input ~ 0
-boot
+DTR
 Text GLabel 6350 3400 0    50   Input ~ 0
-EN
+RTS
 Wire Notes Line
 	4850 500  4850 2150
 Text Notes 600  2350 0    50   ~ 0
@@ -1040,4 +1026,117 @@ Wire Wire Line
 Connection ~ 4050 5300
 Connection ~ 4150 5200
 NoConn ~ 2050 5000
+$Comp
+L Device:R_Small R?
+U 1 1 5FE4AE49
+P 3500 1200
+F 0 "R?" V 3600 1200 50  0000 C CNN
+F 1 "100k" V 3700 1200 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 3559 1109 50  0001 L CNN
+F 3 "~" H 3500 1200 50  0001 C CNN
+	1    3500 1200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3650 1200 3600 1200
+Wire Wire Line
+	3400 1200 3350 1200
+Wire Wire Line
+	3350 1200 3350 1100
+Wire Wire Line
+	3350 1100 3650 1100
+Wire Wire Line
+	3200 1000 3200 1100
+Wire Wire Line
+	3350 1100 3200 1100
+Connection ~ 3350 1100
+Connection ~ 3200 1100
+Wire Wire Line
+	3200 1100 3200 1300
+Text Notes 3300 1550 0    50   ~ 0
+TODO: needed?
+$Comp
+L Transistor_BJT:MBT3904DW1 Q?
+U 1 1 5FE807FD
+P 8700 2800
+F 0 "Q?" H 8891 2846 50  0000 L CNN
+F 1 "MBT3904DW1" H 8891 2755 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6" H 8900 2900 50  0001 C CNN
+F 3 "http://www.onsemi.com/pub_link/Collateral/MBT3904DW1T1-D.PDF" H 8700 2800 50  0001 C CNN
+	1    8700 2800
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Transistor_BJT:MBT3904DW1 Q?
+U 2 1 5FE823E8
+P 8700 3350
+F 0 "Q?" H 8891 3304 50  0000 L CNN
+F 1 "MBT3904DW1" H 8891 3395 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6" H 8900 3450 50  0001 C CNN
+F 3 "http://www.onsemi.com/pub_link/Collateral/MBT3904DW1T1-D.PDF" H 8700 3350 50  0001 C CNN
+	2    8700 3350
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R_Small R?
+U 1 1 5FE977C9
+P 9100 2800
+F 0 "R?" V 8904 2800 50  0000 C CNN
+F 1 "10k" V 8995 2800 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9159 2709 50  0001 L CNN
+F 3 "~" H 9100 2800 50  0001 C CNN
+	1    9100 2800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R_Small R?
+U 1 1 5FE98296
+P 9100 3350
+F 0 "R?" V 8904 3350 50  0000 C CNN
+F 1 "10k" V 8995 3350 50  0000 C CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9159 3259 50  0001 L CNN
+F 3 "~" H 9100 3350 50  0001 C CNN
+	1    9100 3350
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8900 3350 9000 3350
+Wire Wire Line
+	8600 3000 9350 3000
+Wire Wire Line
+	9350 3000 9350 3350
+Wire Wire Line
+	9350 3350 9200 3350
+Wire Wire Line
+	9250 3100 9250 2800
+Wire Wire Line
+	9250 2800 9200 2800
+Wire Wire Line
+	9250 2800 9450 2800
+Connection ~ 9250 2800
+Wire Wire Line
+	9350 3350 9450 3350
+Connection ~ 9350 3350
+Wire Wire Line
+	8600 3100 8600 3150
+Wire Wire Line
+	8600 3100 9250 3100
+Wire Wire Line
+	9000 2800 8900 2800
+Text GLabel 8000 2600 0    50   Input ~ 0
+EN
+Text GLabel 8000 3550 0    50   Input ~ 0
+boot
+Wire Wire Line
+	8000 2600 8600 2600
+Wire Wire Line
+	8000 3550 8600 3550
+Text GLabel 9450 2800 2    50   Input ~ 0
+DTR
+Text GLabel 9450 3350 2    50   Input ~ 0
+RTS
+Wire Notes Line
+	7400 2150 7400 4200
+Text Notes 7550 2350 0    50   ~ 0
+Autoreset
 $EndSCHEMATC

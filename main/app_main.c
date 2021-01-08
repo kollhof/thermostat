@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "esp_event.h"
 #include "esp_https_ota.h"
+#include "esp_gatt_defs.h"
 #include "nvs_flash.h"
 #include "mqtt_client.h"
 #include "unistd.h"
@@ -15,6 +16,7 @@
 #include "./app_mqtt.h"
 #include "./app_timekeeper.h"
 #include "./app_thermostat.h"
+#include "./app_thermometer.h"
 #include "./app_ota.h"
 #include "./app_events.h"
 #include "./app_restarter.h"
@@ -38,6 +40,8 @@ typedef struct {
   uint8_t heat_cycle_sec;
   float target_temp;
 
+  esp_bd_addr_t ble_themometer_addr;
+
   char * mqtt_uri;
   char * mqtt_root_ca;
   char * mqtt_client_cert;
@@ -59,6 +63,8 @@ static void init_logging() {
   esp_log_level_set("TRANSPORT_SSL", ESP_LOG_VERBOSE);
   esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
   esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
+  esp_log_level_set("BTDM_INIT", ESP_LOG_VERBOSE);
+  esp_log_level_set("simple_ble", ESP_LOG_VERBOSE);
 
   ESP_LOGI(TAG, "logging initialized");
 }
@@ -121,6 +127,21 @@ static esp_err_t get_str(nvs_handle_t handle, const char *key, char **out_value)
 }
 
 
+static esp_err_t get_blob(nvs_handle_t handle, const char *key, char *out_value) {
+  size_t required_size;
+
+  esp_err_t err = nvs_get_blob(handle, key, NULL, &required_size);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error reading %s: %s NVS", key, esp_err_to_name(err));
+  } else {
+    nvs_get_blob(handle, key, out_value, &required_size);
+    ESP_LOGI(TAG, "Loaded %s: %d", key, required_size);
+    esp_log_buffer_hex(TAG, (char *) out_value, required_size);
+  }
+  return err;
+}
+
+
 
 char * get_serial_number() {
   uint8_t mac[6] = {0};
@@ -156,6 +177,8 @@ static esp_err_t init_app_config(app_config_t * config) {
   err = get_u8(handle, "heat_max", &config->heat_max);
   err = get_u8(handle, "heat_cycle", &config->heat_cycle_sec);
 
+  err = get_blob(handle, "ble_thermo_addr", (char *) &config->ble_themometer_addr);
+
   err = get_str(handle, "mqtt_uri", &config->mqtt_uri);
   err = get_str(handle, "root_cert_pem", &config->mqtt_root_ca);
   err = get_str(handle, "client_cert_pem", &config->mqtt_client_cert);
@@ -163,7 +186,6 @@ static esp_err_t init_app_config(app_config_t * config) {
 
   err = get_str(handle, "ota_uri", &config->ota_uri);
   err = get_str(handle, "ota_cert", &config->ota_cert);
-
 
   return err;
 }
@@ -203,8 +225,6 @@ static float load_target_temp(float default_target_temp) {
   return target_temp;
 }
 
-
-
 void app_main(void) {
   ESP_LOGI(TAG, "starting...");
   init_system();
@@ -217,11 +237,15 @@ void app_main(void) {
     .heat_normal = 50,
     .heat_max = 80,
     .heat_cycle_sec = 1,
-    .target_temp = load_target_temp(17)
+    .target_temp = load_target_temp(17),
+    .ble_themometer_addr = {0},
   };
   init_app_config(&conf);
 
-  app_init_networking();
+  esp_http_client_config_t ota_config = {
+    .url = conf.ota_uri,
+    .cert_pem = conf.ota_cert,
+  };
 
   esp_mqtt_client_config_t mqtt_config = {
     .uri = conf.mqtt_uri,
@@ -229,32 +253,37 @@ void app_main(void) {
     .client_cert_pem = conf.mqtt_client_cert,
     .client_key_pem = conf.mqtt_client_key,
   };
+
+  app_init_networking();
+
   app_start_mqtt(&mqtt_config, conf.hw_serial);
 
   app_start_networking(portMAX_DELAY);
 
   app_start_homekit(conf.hw_model, conf.hw_rev, conf.hw_serial, conf.target_temp);
 
+  app_start_thermometer(conf.gpio_temp, conf.ble_themometer_addr);
+
   app_start_restart_handler();
 
-  esp_http_client_config_t ota_config = {
-    .url = conf.ota_uri,
-    .cert_pem = conf.ota_cert,
-  };
   app_start_ota_handler(&ota_config);
 
   app_start_timekeeper();
+
   app_start_stats_handler(conf.gpio_led);
 
   app_start_thermostat(
-    conf.gpio_pwm, conf.gpio_temp,
+    conf.gpio_pwm,
     conf.heat_min, conf.heat_normal ,conf.heat_max,
     conf.heat_cycle_sec,
     conf.target_temp
   );
 
-  // TODO: should never reach this point
-  ESP_LOGI(TAG, "main task returned unexpectedly, restarting ...");
-  fflush(stdout);
-  esp_restart();
+  // TODO: should wait for a restart event
+  ESP_LOGI(TAG, "all tasks started");
+  while (true) {
+    sleep(1);
+  }
+  // fflush(stdout);
+  // esp_restart();
 }
