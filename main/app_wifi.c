@@ -264,20 +264,22 @@ esp_err_t app_start_networking(TickType_t ticks_to_wait) {
 
     ESP_LOGI(TAG, "Provisioning Started. Name : %s, POP : %s", service_name, pop);
 
+    ESP_LOGI(TAG, "Waiting for  Wi-Fi connectd");
+
+    /* Wait for Wi-Fi connection */
+    xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, false, true, ticks_to_wait);
   } else {
     ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
     /* We don't need the manager as device is already provisioned,
      * so let's release it's resources */
-    wifi_prov_mgr_deinit();
+
+    // TODO: deinit breaks BLE later
+    // wifi_prov_mgr_deinit();
+
     /* Start Wi-Fi station */
     wifi_init_sta();
   }
 
-  ESP_LOGI(TAG, "Waiting for  Wi-Fi connectd");
-
-  /* Wait for Wi-Fi connection */
-  // TOOD: only wait when provisioning
-  xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, false, true, ticks_to_wait);
   return ESP_OK;
 }
 

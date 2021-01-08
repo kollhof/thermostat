@@ -109,7 +109,7 @@ static void handle_message(void *arg, esp_event_base_t event_base, int32_t event
 
   } else if (topic_matches(event, ctx, "/target-temp/set")) {
     float target_temp = cJSON_GetObjectItem(root, "value")->valuedouble;
-    app_post_event(APP_EVENT_TARGET_TEMP_SET, &target_temp, sizeof(target_temp));
+    app_post_event(APP_EVENT_TARGET_TEMP_CHANGED, &target_temp, sizeof(target_temp));
 
   } else {
     ESP_LOGI(TAG, "no handler for topic %.*s", event->topic_len, event->topic);
