@@ -8,7 +8,14 @@ extern "C" {
 #endif
 
 
+typedef enum {
+  APP_THERMOSTAT_TEMP_OK,
+  APP_THERMOSTAT_TEMP_ERROR
+} app_thermostat_temp_state_t;
+
+
 typedef struct {
+  app_thermostat_temp_state_t temp_state;
   float current_temp;
   float target_temp;
   uint8_t heat;

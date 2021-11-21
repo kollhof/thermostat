@@ -9,6 +9,7 @@ extern "C" {
 
 
 typedef struct {
+  bool error;
   float current_temp;
   float target_temp;
   uint8_t heat;

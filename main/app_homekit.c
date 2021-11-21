@@ -40,7 +40,10 @@ static void hap_set_float(hap_serv_t * hs, const char * type_uuid, float val) {
 static void hap_set_uint(hap_serv_t * hs, const char * type_uuid, uint32_t val) {
   hap_val_t hval = {.u = val};
   hap_char_t * ch = hap_serv_get_char_by_uuid(hs, type_uuid);
-  hap_char_update_val(ch, &hval);
+
+  if (0 != hap_char_update_val(ch, &hval)) {
+    ESP_LOGE(TAG, "Err setting %s, %d", type_uuid, val);
+  };
 }
 
 
@@ -131,11 +134,21 @@ static void handle_thermo_change(void* arg, esp_event_base_t evt_base, int32_t e
   } else {
     hap_set_uint(service, HAP_CHAR_UUID_CURRENT_HEATING_COOLING_STATE, 1);
   }
+
+  if (state->temp_state != APP_THERMOSTAT_TEMP_OK) {
+    ESP_LOGE(TAG, "state error %d", state->temp_state);
+    hap_set_uint(service, HAP_CHAR_UUID_STATUS_LOW_BATTERY, 1);
+
+  } else {
+    ESP_LOGE(TAG, "state OK %d", state->temp_state);
+    hap_set_uint(service, HAP_CHAR_UUID_STATUS_LOW_BATTERY, 0);
+  }
 }
 
 
 
 void app_start_homekit(char * model, char * hw_rev, char * serial_num, float target_temp) {
+
   /* Configure HomeKit core to make the Accessory name (and thus the WAC SSID) unique,
    * instead of the default configuration wherein only the WAC SSID is made unique.
    */
@@ -157,7 +170,6 @@ void app_start_homekit(char * model, char * hw_rev, char * serial_num, float tar
     .serial_num = serial_num,
     .hw_rev = hw_rev,
     .fw_rev = fw_rev,
-
     .pv = "1.1",
     .identify_routine = thermo_identify,
     .cid = HAP_CID_THERMOSTAT,
@@ -169,11 +181,20 @@ void app_start_homekit(char * model, char * hw_rev, char * serial_num, float tar
   hap_acc_add_product_data(accessory, product_data, sizeof(product_data));
 
   // TODO: get initial values from main
-  hap_serv_t * service = hap_serv_thermostat_create(0 /*0=OFF, 1=HEAT, 2=COOL*/, 3 /* TODO: 3=AUTO */, 20, target_temp, 0);
+  hap_serv_t * service = hap_serv_thermostat_create(
+    0 /*0=OFF, 1=HEAT, 2=COOL*/,
+    3 /* TODO: 3=AUTO */,
+    20, target_temp,
+    0 /* 0=Celsius */
+  );
+
+  hap_char_t * batt = hap_char_status_low_battery_create(0);
+  hap_serv_add_char(service, batt);
 
   hap_serv_set_write_cb(service, thermo_write);
 
   hap_acc_add_serv(accessory, service);
+  // hap_acc_add_serv(accessory, temp_srv);
 
   hap_add_accessory(accessory);
 
@@ -181,7 +202,7 @@ void app_start_homekit(char * model, char * hw_rev, char * serial_num, float tar
   esp_event_handler_register(HAP_EVENT, ESP_EVENT_ANY_ID, &thermo_hap_event_handler, NULL);
 
   // TODO: why is hs != service
-  hap_char_t * hs = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_THERMOSTAT);
+  hap_serv_t * hs = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_THERMOSTAT);
 
   app_register_evt_handler(APP_EVENT_THERMOSTAT_CHANGED, handle_thermo_change, hs);
 
