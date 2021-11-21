@@ -38,8 +38,12 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
   stats->current_temp = current_state->current_temp;
   stats->heat = current_state->heat;
   stats->target_temp = current_state->target_temp;
+  stats->error = current_state->temp_state == APP_THERMOSTAT_TEMP_ERROR ? true : false;
 
-  ESP_LOGI(TAG, "curr: %f C, target: %f C heat: %d" , stats->current_temp, stats->target_temp,  stats->heat);
+  ESP_LOGI(TAG,
+    "curr: %f C, target: %f C heat: %d ERR: %d" ,
+    stats->current_temp, stats->target_temp, stats->heat, stats->error
+  );
 
   if (stats->heat == 0) {
     set_led_level(0);
@@ -91,6 +95,7 @@ void app_start_stats_handler(gpio_num_t gpio_led) {
     .current_temp = 20.0,
     .target_temp = 20.0,
     .heat = 0,
+    .error = false
   };
 
   app_register_evt_handler(APP_EVENT_STATS_GET, handle_get_stats, stats);

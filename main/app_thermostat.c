@@ -63,16 +63,18 @@ static void handle_temp_change(app_thermostat_state_t * state){
 
   uint8_t heat = state->heat;
 
-  if (state->current_temp < -100) {
+  if (state->temp_state != APP_THERMOSTAT_TEMP_OK) {
+    ESP_LOGE(TAG, "temp error ... min heat");
     heat = state->heat_min;
-  } else if (temp_diff >= 2) {
-    heat = 0;
-  } else if (temp_diff >= 0) {
-    heat = state->heat_min;
-  } else if (temp_diff < -2) {
+
+  } else if (temp_diff <= -2) {
     heat = state->heat_max;
-  } else {
+
+  } else if (temp_diff < 0) {
     heat = state->heat_normal;
+
+  } else {
+    heat = 0;
   }
 
   state->heat = heat;
@@ -102,6 +104,18 @@ static void handle_current_temp_changed(void *arg, esp_event_base_t evt_base, in
 }
 
 
+static void handle_temp_read_state_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  app_thermostat_state_t * state = (app_thermostat_state_t*) arg;
+  bool err = *((bool*) data);
+
+  state->temp_state = err
+    ? APP_THERMOSTAT_TEMP_ERROR
+    : APP_THERMOSTAT_TEMP_OK;
+
+  handle_temp_change(state);
+}
+
+
 
 static void handle_heat_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
   slow_pwm_t * pwm = (slow_pwm_t*) arg;
@@ -122,6 +136,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, uint8_t heat_min, uint8_t heat_no
 
   app_thermostat_state_t * state = malloc(sizeof(app_thermostat_state_t));
   *state = (app_thermostat_state_t) {
+    .temp_state = APP_THERMOSTAT_TEMP_OK,
     .current_temp = 20,
     .target_temp = target_temp,
     .heat = 0,
@@ -132,6 +147,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, uint8_t heat_min, uint8_t heat_no
 
   app_register_evt_handler(APP_EVENT_TARGET_TEMP_CHANGED, handle_traget_temp_changed, state);
   app_register_evt_handler(APP_EVENT_CURRENT_TEMP_CHANGED, handle_current_temp_changed, state);
+  app_register_evt_handler(APP_EVENT_TEMP_READ_STATE, handle_temp_read_state_changed, state);
   app_register_evt_handler(APP_EVENT_THERMOSTAT_CHANGED, handle_heat_changed, pwm);
 }
 
