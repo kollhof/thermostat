@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "esp_task_wdt.h"
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_main.h"
@@ -7,16 +8,12 @@
 #include "esp_timer.h"
 #include "driver/gpio.h"
 
-#include "temp_sensor.h"
+// #include "temp_sensor.h"
 
 #include "./app_events.h"
 
 
 #define TAG "app-thermometer"
-
-
-static const uint8_t fallback_timeout_sec = 30;
-
 
 
 static void post_curr_temp_change_event(float temp) {
@@ -28,12 +25,6 @@ static void post_curr_temp_change_event(float temp) {
 static void post_ble_temp_change_event(float temp) {
   app_post_event(APP_EVENT_BLE_TEMP_CHANGED, &temp, sizeof(temp));
 }
-
-
-static void post_ble_temp_read_err(bool err) {
-  app_post_event(APP_EVENT_TEMP_READ_STATE, &err, sizeof(err));
-}
-
 
 
 static esp_ble_scan_params_t ble_scan_params = {
@@ -150,65 +141,36 @@ static void start_ble_thermometer(esp_bd_addr_t addr) {
 
 
 
-static void read_temp_from_sensor(void * arg) {
-  post_ble_temp_read_err(true);
-
-  temp_sensor_t * temp_sensor = (temp_sensor_t *) arg;
-
-  ESP_LOGW(TAG, "fallback to reading temp from sensor");
-  double temp = get_temperature(temp_sensor);
-
-  if(temp > 80.0) {
-    post_ble_temp_read_err(true);
-  }
-
-  ESP_LOGI(TAG, "sensor temp: %f C", temp);
-
-  post_curr_temp_change_event(temp);
-}
-
-
-
-static esp_timer_handle_t start_sensor_thermometer(gpio_num_t gpio_temp) {
-  ESP_LOGI(TAG, "starting sensor thermometer on GPIO: %d", gpio_temp);
-  const uint64_t read_interval = 10000;
-  temp_sensor_t * temp_sensor = start_temp_sensors(gpio_temp, read_interval);
-
-  esp_timer_create_args_t timer_args = {
-    .name = "app-sensor-thermometer",
-    .callback = &read_temp_from_sensor,
-    .arg = (void*) temp_sensor
-  };
-
-  esp_timer_handle_t timer;
-  esp_timer_create(&timer_args, &timer);
-  esp_timer_start_periodic(timer, fallback_timeout_sec * 1000*1000);
-
-  return timer;
-}
-
-
-
 static void handle_ble_temp_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
-  esp_timer_handle_t fallback_sensor_timer = (esp_timer_handle_t) arg;
-  esp_timer_stop(fallback_sensor_timer);
-
   float temp = * (float*) data;
 
   ESP_LOGI(TAG, "BLE temp: %f", temp);
-  post_ble_temp_read_err(false);
-  post_curr_temp_change_event(temp);
 
-  esp_timer_start_periodic(fallback_sensor_timer, fallback_timeout_sec * 1000*1000);
+  esp_task_wdt_reset();
+
+  post_curr_temp_change_event(temp);
 }
 
 
 
+static void handle_app_started(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  // watchdog for BLE, careful not to set it lower than OTA update time
+  ESP_LOGI(TAG, "adding watchdog");
+  esp_task_wdt_init(5*60, true);
+  esp_task_wdt_add(NULL);
+}
+
+
+static void handle_ota_request(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  ESP_LOGI(TAG, "removing watchdog");
+  esp_task_wdt_delete(NULL);
+}
+
 
 void app_start_thermometer(gpio_num_t gpio_temp, esp_bd_addr_t addr) {
-  esp_timer_handle_t fallback_sensor_timer = start_sensor_thermometer(gpio_temp);
-
-  app_register_evt_handler(APP_EVENT_BLE_TEMP_CHANGED, handle_ble_temp_changed, fallback_sensor_timer);
+  app_register_evt_handler(APP_EVENT_BLE_TEMP_CHANGED, handle_ble_temp_changed, 0);
+  app_register_evt_handler(APP_EVENT_STARTED, handle_app_started, NULL);
+  app_register_evt_handler(APP_EVENT_OTA, handle_ota_request, NULL);
 
   start_ble_thermometer(addr);
 }

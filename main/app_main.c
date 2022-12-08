@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 
 #include "esp_log.h"
+#include "esp_task_wdt.h"
 #include "esp_event.h"
 #include "esp_https_ota.h"
 #include "esp_gatt_defs.h"
@@ -157,6 +158,7 @@ char * get_serial_number() {
 static esp_err_t init_app_config(app_config_t * config) {
   ESP_LOGI(TAG, "init config...");
 
+
   config->hw_serial = get_serial_number();
 
   nvs_handle handle;
@@ -172,6 +174,7 @@ static esp_err_t init_app_config(app_config_t * config) {
   err = get_u8(handle, "gpio_pwm", &config->gpio_pwm);
   err = get_u8(handle, "gpio_temp", &config->gpio_temp);
   err = get_u8(handle, "gpio_led", &config->gpio_led);
+
   err = get_u8(handle, "heat_min", &config->heat_min);
   err = get_u8(handle, "heat_normal", &config->heat_normal);
   err = get_u8(handle, "heat_max", &config->heat_max);
@@ -186,6 +189,8 @@ static esp_err_t init_app_config(app_config_t * config) {
 
   err = get_str(handle, "ota_uri", &config->ota_uri);
   err = get_str(handle, "ota_cert", &config->ota_cert);
+
+  nvs_close(handle);
 
   return err;
 }
@@ -226,20 +231,44 @@ static float load_target_temp(float default_target_temp) {
 }
 
 
+static void patch_config() {
+
+  nvs_handle_t nvs_handle;
+  esp_err_t err = nvs_open_from_partition("factory_nvs", "app", NVS_READWRITE, &nvs_handle);
+
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+  } else {
+    nvs_set_u8(nvs_handle, "heat_min", 0);
+    nvs_set_u8(nvs_handle, "heat_normal", 50);
+    nvs_set_u8(nvs_handle, "heat_max", 80);
+
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Error (%s) committing storage", esp_err_to_name(err));
+    }
+
+    nvs_close(nvs_handle);
+  }
+}
+
+
 
 void app_main(void) {
   ESP_LOGI(TAG, "starting...");
   init_system();
 
+  patch_config();
+
   app_config_t conf = {
     .gpio_pwm = 25,
     .gpio_temp = 26,
     .gpio_led = 27,
-    .heat_min = 5,
+    .heat_min = 0,
     .heat_normal = 50,
-    .heat_max = 80,
+    .heat_max = 70,
     .heat_cycle_sec = 1,
-    .target_temp = load_target_temp(17),
+    .target_temp = load_target_temp(15),
     .ble_themometer_addr = {0},
   };
   init_app_config(&conf);
@@ -276,10 +305,12 @@ void app_main(void) {
 
   app_start_thermostat(
     conf.gpio_pwm,
-    conf.heat_min, conf.heat_normal ,conf.heat_max,
+    conf.heat_min, conf.heat_normal, conf.heat_max,
     conf.heat_cycle_sec,
     conf.target_temp
   );
+
+  app_post_event(APP_EVENT_STARTED, NULL, 0);
 
   // TODO: should wait for a restart event
   ESP_LOGI(TAG, "all tasks started");

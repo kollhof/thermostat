@@ -14,7 +14,6 @@ static const char* TAG = "slow_pwm";
 static void periodic_timer_callback(void * arg) {
   slow_pwm_t * pmw = (slow_pwm_t *)arg;
 
-
   uint32_t duty = atomic_load(&(pmw->duty));
 
   if (pmw->tick_cntr < duty) {

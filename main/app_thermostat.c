@@ -67,7 +67,7 @@ static void handle_temp_change(app_thermostat_state_t * state){
     ESP_LOGE(TAG, "temp error ... min heat");
     heat = state->heat_min;
 
-  } else if (temp_diff <= -2) {
+  } else if (temp_diff <= -1) {
     heat = state->heat_max;
 
   } else if (temp_diff < 0) {
