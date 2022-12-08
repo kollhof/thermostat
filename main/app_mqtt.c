@@ -129,6 +129,8 @@ static void handle_stats(void* arg, esp_event_base_t evt_base, int32_t evt_id, v
   cJSON_AddNumberToObject(json, "current_temp", stats->current_temp);
   cJSON_AddNumberToObject(json, "target_temp", stats->target_temp);
   cJSON_AddNumberToObject(json, "heat", stats->heat / 100.0);
+  // cJSON_AddNumberToObject(json, "heat_normal", stats->heat_normal / 100.0);
+  // cJSON_AddNumberToObject(json, "heat_max", stats->heat_max / 100.0);
   cJSON_AddBoolToObject(json, "error", stats->error);
   char * msg = cJSON_Print(json);
   cJSON_Delete(json);
