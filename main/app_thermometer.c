@@ -27,6 +27,11 @@ static void post_ble_temp_change_event(float temp) {
 }
 
 
+static void post_ble_humid_change_event(float humid) {
+  app_post_event(APP_EVENT_CURRENT_HUMID_CHANGED, &humid, sizeof(humid));
+}
+
+
 static esp_ble_scan_params_t ble_scan_params = {
   .scan_type        = BLE_SCAN_TYPE_PASSIVE,
   .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
@@ -62,8 +67,10 @@ static void gap_callback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *p
         // Len,Type,Value
         // 02 01 06  - Advertising flags
         // 03 02 F0 FF
-        // .. .. .. ID ID ID ID ID ID ID ID ID .. .. TEMPE HUMID .. .. .. ..
-        // 15 FF 10 00 00 00 37 01 00 00 15 6F 7C 0B BA 01 39 02 29 51 09 00  - Manufacturer Specific Data
+        // .. .. .. ID ID ID ID ID ID ID ID ID ..
+        // 15 FF 10 00 00 00 37 01 00 00 15 6F 7C
+        // .. TEMPE HUMID .. .. .. ..
+        // 0B BA 01 39 02 29 51 09 00  - Manufacturer Specific Data
         // 0D 09 54 68 65 72 6D 6F 42 65 61 63 6F 6E
         // 05 12 18 00 38 01
         // 02 0A 00
@@ -76,7 +83,12 @@ static void gap_callback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *p
         uint16_t temp_dec = 0;
         memcpy(&temp_dec, &scan_result->scan_rst.ble_adv[21], 2);
         float temp = temp_dec / 16.0;
+
+        uint16_t humid_dec = 0;
+        memcpy(&humid_dec, &scan_result->scan_rst.ble_adv[23], 2);
+        float humid = humid_dec / 16.0;
         post_ble_temp_change_event(temp);
+        post_ble_humid_change_event(humid);
       }
     }
   }

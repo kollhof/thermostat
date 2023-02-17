@@ -18,6 +18,7 @@ typedef struct {
   app_thermostat_temp_state_t temp_state;
   float current_temp;
   float target_temp;
+  float current_humid;
   uint8_t heat;
   uint8_t heat_min;
   uint8_t heat_normal;

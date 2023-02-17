@@ -37,6 +37,7 @@ CONFIG_MP_BLOB_SUPPORT=y
 
 # --- end homekit
 
+CONFIG_LWIP_LOCAL_HOSTNAME="thermo"
 
 # Override some defaults so BT stack is enabled
 CONFIG_BT_ENABLED=y
