@@ -239,14 +239,14 @@ static void patch_config() {
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
   } else {
-    nvs_set_u8(nvs_handle, "heat_min", 0);
-    nvs_set_u8(nvs_handle, "heat_normal", 50);
-    nvs_set_u8(nvs_handle, "heat_max", 80);
+    // nvs_set_u8(nvs_handle, "heat_min", 5);
+    // nvs_set_u8(nvs_handle, "heat_normal", 50);
+    // nvs_set_u8(nvs_handle, "heat_max", 70);
 
-    err = nvs_commit(nvs_handle);
-    if (err != ESP_OK) {
-      ESP_LOGE(TAG, "Error (%s) committing storage", esp_err_to_name(err));
-    }
+    // err = nvs_commit(nvs_handle);
+    // if (err != ESP_OK) {
+    //   ESP_LOGE(TAG, "Error (%s) committing storage", esp_err_to_name(err));
+    // }
 
     nvs_close(nvs_handle);
   }
@@ -264,7 +264,7 @@ void app_main(void) {
     .gpio_pwm = 25,
     .gpio_temp = 26,
     .gpio_led = 27,
-    .heat_min = 0,
+    .heat_min = 15,
     .heat_normal = 50,
     .heat_max = 70,
     .heat_cycle_sec = 1,
@@ -285,7 +285,7 @@ void app_main(void) {
     .client_key_pem = conf.mqtt_client_key,
   };
 
-  app_init_networking();
+  app_init_networking(conf.hw_serial);
 
   app_start_mqtt(&mqtt_config, conf.hw_serial);
 

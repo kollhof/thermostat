@@ -12,6 +12,7 @@ typedef struct {
   bool error;
   float current_temp;
   float target_temp;
+  float current_humid;
   uint8_t heat;
 } app_stats_t;
 

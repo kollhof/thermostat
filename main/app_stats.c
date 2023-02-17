@@ -38,6 +38,7 @@ static void handle_change(void* arg, esp_event_base_t evt_base, int32_t evt_id, 
   stats->current_temp = current_state->current_temp;
   stats->heat = current_state->heat;
   stats->target_temp = current_state->target_temp;
+  stats->current_humid = current_state->current_humid;
   stats->error = current_state->temp_state == APP_THERMOSTAT_TEMP_ERROR ? true : false;
 
   ESP_LOGI(TAG,
@@ -94,6 +95,7 @@ void app_start_stats_handler(gpio_num_t gpio_led) {
   *stats = (app_stats_t) {
     .current_temp = 20.0,
     .target_temp = 20.0,
+    .current_humid = 0,
     .heat = 0,
     .error = false
   };

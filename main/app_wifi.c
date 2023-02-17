@@ -144,7 +144,7 @@ static void event_handler(void* arg, esp_event_base_t event_base, int event_id, 
 }
 
 
-void app_init_networking(void) {
+void app_init_networking(const char * hw_serial) {
   /* Initialize TCP/IP */
   esp_netif_init();
 
@@ -157,7 +157,12 @@ void app_init_networking(void) {
   ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
 
   /* Initialize Wi-Fi including netif with default config */
-  esp_netif_create_default_wifi_sta();
+  esp_netif_t * netif = esp_netif_create_default_wifi_sta();
+
+  char hostname[strlen(hw_serial) + 8];
+  strcpy(hostname, "thermo-");
+  strcat(hostname, hw_serial);
+  esp_netif_set_hostname(netif, hostname);
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));

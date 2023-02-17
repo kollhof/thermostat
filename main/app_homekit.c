@@ -125,11 +125,14 @@ static void handle_thermo_change(void* arg, esp_event_base_t evt_base, int32_t e
   app_thermostat_state_t * state = (app_thermostat_state_t*) data;
 
   float temp = roundf(state->current_temp * 10) / 10;
+  // HAP spec need to use increments of 1 despite accepting a float
+  float humid = roundf(state->current_humid * 100) / 100;
 
   hap_set_float(service, HAP_CHAR_UUID_CURRENT_TEMPERATURE, temp);
+  hap_set_float(service, HAP_CHAR_UUID_CURRENT_RELATIVE_HUMIDITY, humid);
   // hap_set_float(service, HAP_CHAR_UUID_TARGET_TEMPERATURE, stats->target_temp);
 
-  if (state->heat < 10) {
+  if (state->heat < 20) {
     hap_set_uint(service, HAP_CHAR_UUID_CURRENT_HEATING_COOLING_STATE, 0);
   } else {
     hap_set_uint(service, HAP_CHAR_UUID_CURRENT_HEATING_COOLING_STATE, 1);
@@ -187,6 +190,9 @@ void app_start_homekit(char * model, char * hw_rev, char * serial_num, float tar
     20, target_temp,
     0 /* 0=Celsius */
   );
+
+  hap_char_t * humid = hap_char_current_relative_humidity_create(50);
+  hap_serv_add_char(service, humid);
 
   hap_char_t * batt = hap_char_status_low_battery_create(0);
   hap_serv_add_char(service, batt);

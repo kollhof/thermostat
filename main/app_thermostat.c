@@ -74,7 +74,7 @@ static void handle_temp_change(app_thermostat_state_t * state){
     heat = state->heat_normal;
 
   } else {
-    heat = 0;
+    heat = state->heat_min;
   }
 
   state->heat = heat;
@@ -101,6 +101,15 @@ static void handle_current_temp_changed(void *arg, esp_event_base_t evt_base, in
   float temp = *((float*) data);
   state->current_temp = temp;
   handle_temp_change(state);
+}
+
+
+
+static void handle_current_humid_changed(void *arg, esp_event_base_t evt_base, int32_t id, void *data) {
+  app_thermostat_state_t * state = (app_thermostat_state_t*) arg;
+  float humid = *((float*) data);
+  state->current_humid = humid;
+  post_changed_event(state);
 }
 
 
@@ -139,7 +148,8 @@ void app_start_thermostat(gpio_num_t gpio_pwm, uint8_t heat_min, uint8_t heat_no
     .temp_state = APP_THERMOSTAT_TEMP_OK,
     .current_temp = 20,
     .target_temp = target_temp,
-    .heat = 0,
+    .current_humid = 0,
+    .heat = heat_min,
     .heat_min = heat_min,
     .heat_max = heat_max,
     .heat_normal = heat_normal,
@@ -147,6 +157,7 @@ void app_start_thermostat(gpio_num_t gpio_pwm, uint8_t heat_min, uint8_t heat_no
 
   app_register_evt_handler(APP_EVENT_TARGET_TEMP_CHANGED, handle_traget_temp_changed, state);
   app_register_evt_handler(APP_EVENT_CURRENT_TEMP_CHANGED, handle_current_temp_changed, state);
+  app_register_evt_handler(APP_EVENT_CURRENT_HUMID_CHANGED, handle_current_humid_changed, state);
   app_register_evt_handler(APP_EVENT_TEMP_READ_STATE, handle_temp_read_state_changed, state);
   app_register_evt_handler(APP_EVENT_THERMOSTAT_CHANGED, handle_heat_changed, pwm);
 }
